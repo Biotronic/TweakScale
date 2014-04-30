@@ -29,7 +29,7 @@ public class GoodspeedTweakScale : PartModule
 	[KSPField(isPersistant = true)]
 	public bool constantHeight = false;
 	
-	private static double[] scaleFactor = {0.625, 1.25, 2.5, 3.75, 5.0};
+	private static double[] scaleFactors = {0.625, 1.25, 2.5, 3.75, 5.0};
 	
 	private Part basePart;
 	
@@ -54,23 +54,29 @@ public class GoodspeedTweakScale : PartModule
         }
         return defaultValue;
     }
+
+    public GoodspeedTweakScale()
+    {
+    }
 	
 	public override void OnStart(StartState state)
 	{
-		basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
+        base.OnStart(state);
+        basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
+
+        var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
+        range.minValue = configValue("minScale", defaultValue: 0);
+        range.maxValue = configValue("maxScale", defaultValue: 4);
+        range.stepIncrement = configValue("stepIncrement", defaultValue: 1);
 
 		if ( currentScale < 0f )
         {
             print("GTS defaultScale == " + defaultScale.ToString());
             tweakScale = currentScale = defaultScale = configValue("defaultScale", defaultValue: 1);
-            var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
-            range.minValue = configValue("minScale", defaultValue: 0);
-            range.maxValue = configValue("maxScale", defaultValue: 4);
-            range.stepIncrement = configValue("stepIncrement", defaultValue: 1);
 		}
 		else
 		{
-			double rescaleAbsolute = scaleFactor[(int)tweakScale] / scaleFactor[defaultScale];
+			double rescaleAbsolute = scaleFactors[(int)tweakScale] / scaleFactors[defaultScale];
 			updateByWidth(rescaleAbsolute, false);
 			part.mass = (float)(basePart.mass * (constantHeight ? rescaleAbsolute * rescaleAbsolute : rescaleAbsolute * rescaleAbsolute * rescaleAbsolute));
 		}
@@ -107,7 +113,7 @@ public class GoodspeedTweakScale : PartModule
 			moveNode(part.srfAttachNode, basePart.srfAttachNode, rescaleVector, moveParts);
 		if ( moveParts )
 		{
-            float relativeFactor = (float)(scaleFactor[(int)tweakScale] / scaleFactor[currentScale]);
+            float relativeFactor = (float)(scaleFactors[(int)tweakScale] / scaleFactors[currentScale]);
 			Vector3 relativeVector = new Vector3(relativeFactor, constantHeight ? 1f : relativeFactor, relativeFactor);
 			foreach ( Part child in part.children )
 			{
@@ -124,14 +130,14 @@ public class GoodspeedTweakScale : PartModule
 	private void updateBySurfaceArea(double rescaleFactor) // values that change relative to the surface area (i.e. scale squared)
 	{
 		if ( basePart.breakingForce == 22f ) // not defined in the config, set to a reasonable default
-            part.breakingForce = (float)(32.0 * scaleFactor[(int)tweakScale] * scaleFactor[(int)tweakScale]); // scale 1 = 50, scale 2 = 200, etc.
+            part.breakingForce = (float)(32.0 * scaleFactors[(int)tweakScale] * scaleFactors[(int)tweakScale]); // scale 1 = 50, scale 2 = 200, etc.
 		else // is defined, scale it relative to new surface area
 			part.breakingForce = (float)(basePart.breakingForce  * rescaleFactor);
 		if ( part.breakingForce < 22f )
             part.breakingForce = 22f;
 		
 		if ( basePart.breakingTorque == 22f )
-            part.breakingTorque = (float)(32.0 * scaleFactor[(int)tweakScale] * scaleFactor[(int)tweakScale]);
+            part.breakingTorque = (float)(32.0 * scaleFactors[(int)tweakScale] * scaleFactors[(int)tweakScale]);
 		else
 			part.breakingTorque = (float)(basePart.breakingTorque * rescaleFactor);
 		if ( part.breakingTorque < 22f )
@@ -190,11 +196,11 @@ public class GoodspeedTweakScale : PartModule
 	public void Update()
 	{
 		if ( HighLogic.LoadedSceneIsEditor && currentScale >= 0f )
-		{
+        {
 			if ( tweakScale != currentScale ) // user has changed the scale tweakable
 			{
-                double rescaleAbsolute = scaleFactor[(int)tweakScale] / scaleFactor[defaultScale];
-                double rescaleRelative = scaleFactor[(int)tweakScale] / scaleFactor[currentScale];
+                double rescaleAbsolute = scaleFactors[(int)tweakScale] / scaleFactors[defaultScale];
+                double rescaleRelative = scaleFactors[(int)tweakScale] / scaleFactors[currentScale];
 				
 				updateBySurfaceArea(rescaleAbsolute * rescaleAbsolute); // call this first, results are used by updateByWidth
 				updateByWidth(rescaleAbsolute, true);
@@ -205,7 +211,7 @@ public class GoodspeedTweakScale : PartModule
 			}
 			else if ( part.transform.GetChild(0).localScale != savedScale ) // editor frequently nukes our OnStart resize some time later
 			{
-                updateByWidth(scaleFactor[(int)tweakScale] / scaleFactor[defaultScale], false);
+                updateByWidth(scaleFactors[(int)tweakScale] / scaleFactors[defaultScale], false);
 			}
 		}
 	}
