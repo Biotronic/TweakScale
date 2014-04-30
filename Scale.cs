@@ -18,7 +18,7 @@ using UnityEngine;
 public class GoodspeedTweakScale : PartModule
 {
 	[KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "Scale"), UI_FloatRange(minValue = 0f, maxValue = 4f, stepIncrement = 1f)]
-	public int tweakScale = 1;
+	public float tweakScale = 1;
 	
 	[KSPField(isPersistant = true)]
     public int currentScale = -1;
@@ -70,7 +70,7 @@ public class GoodspeedTweakScale : PartModule
 		}
 		else
 		{
-			double rescaleAbsolute = scaleFactor[tweakScale] / scaleFactor[defaultScale];
+			double rescaleAbsolute = scaleFactor[(int)tweakScale] / scaleFactor[defaultScale];
 			updateByWidth(rescaleAbsolute, false);
 			part.mass = (float)(basePart.mass * (constantHeight ? rescaleAbsolute * rescaleAbsolute : rescaleAbsolute * rescaleAbsolute * rescaleAbsolute));
 		}
@@ -87,7 +87,7 @@ public class GoodspeedTweakScale : PartModule
 			else
 				node.attachedPart.transform.Translate(node.position - oldPosition, part.transform);
 		}
-		node.size = baseNode.size + tweakScale - defaultScale;
+        node.size = baseNode.size + (int)tweakScale - defaultScale;
 		if ( node.size < 0 ) node.size = 0;
 		node.breakingForce = part.breakingForce;
 		node.breakingTorque = part.breakingTorque;
@@ -107,7 +107,7 @@ public class GoodspeedTweakScale : PartModule
 			moveNode(part.srfAttachNode, basePart.srfAttachNode, rescaleVector, moveParts);
 		if ( moveParts )
 		{
-			float relativeFactor = (float)(scaleFactor[tweakScale] / scaleFactor[currentScale]);
+            float relativeFactor = (float)(scaleFactor[(int)tweakScale] / scaleFactor[currentScale]);
 			Vector3 relativeVector = new Vector3(relativeFactor, constantHeight ? 1f : relativeFactor, relativeFactor);
 			foreach ( Part child in part.children )
 			{
@@ -124,16 +124,18 @@ public class GoodspeedTweakScale : PartModule
 	private void updateBySurfaceArea(double rescaleFactor) // values that change relative to the surface area (i.e. scale squared)
 	{
 		if ( basePart.breakingForce == 22f ) // not defined in the config, set to a reasonable default
-			part.breakingForce = (float)(32.0 * scaleFactor[tweakScale] * scaleFactor[tweakScale]); // scale 1 = 50, scale 2 = 200, etc.
+            part.breakingForce = (float)(32.0 * scaleFactor[(int)tweakScale] * scaleFactor[(int)tweakScale]); // scale 1 = 50, scale 2 = 200, etc.
 		else // is defined, scale it relative to new surface area
 			part.breakingForce = (float)(basePart.breakingForce  * rescaleFactor);
-		if ( part.breakingForce < 22f ) part.breakingForce = 22f;
+		if ( part.breakingForce < 22f )
+            part.breakingForce = 22f;
 		
 		if ( basePart.breakingTorque == 22f )
-			part.breakingTorque = (float)(32.0 * scaleFactor[tweakScale] * scaleFactor[tweakScale]);
+            part.breakingTorque = (float)(32.0 * scaleFactor[(int)tweakScale] * scaleFactor[(int)tweakScale]);
 		else
 			part.breakingTorque = (float)(basePart.breakingTorque * rescaleFactor);
-		if ( part.breakingTorque < 22f ) part.breakingTorque = 22f;
+		if ( part.breakingTorque < 22f )
+            part.breakingTorque = 22f;
 	}
 	
 	private void updateByRelativeVolume(double rescaleFactor) // values that change relative to the volume (i.e. scale cubed)
@@ -191,19 +193,19 @@ public class GoodspeedTweakScale : PartModule
 		{
 			if ( tweakScale != currentScale ) // user has changed the scale tweakable
 			{
-				double rescaleAbsolute = scaleFactor[tweakScale] / scaleFactor[defaultScale];
-				double rescaleRelative = scaleFactor[tweakScale] / scaleFactor[currentScale];
+                double rescaleAbsolute = scaleFactor[(int)tweakScale] / scaleFactor[defaultScale];
+                double rescaleRelative = scaleFactor[(int)tweakScale] / scaleFactor[currentScale];
 				
 				updateBySurfaceArea(rescaleAbsolute * rescaleAbsolute); // call this first, results are used by updateByWidth
 				updateByWidth(rescaleAbsolute, true);
 				updateByRelativeVolume(constantHeight ? rescaleRelative * rescaleRelative : rescaleRelative * rescaleRelative * rescaleRelative);
 				updateWindow(); // call this last
-				
-				currentScale = tweakScale;
+
+                currentScale = (int)tweakScale;
 			}
 			else if ( part.transform.GetChild(0).localScale != savedScale ) // editor frequently nukes our OnStart resize some time later
 			{
-                updateByWidth(scaleFactor[tweakScale] / scaleFactor[defaultScale], false);
+                updateByWidth(scaleFactor[(int)tweakScale] / scaleFactor[defaultScale], false);
 			}
 		}
 	}
