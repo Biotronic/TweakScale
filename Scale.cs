@@ -47,49 +47,25 @@ public class GoodspeedTweakScale : PartModule
         }
     }
 
-    private float configValue(string name, float defaultValue)
+    /// <summary>
+    /// Reads a value from the ConfigNode and magically converts it to the type you ask. Tested for float, boolean and double[]. Anything else is at your own risk.
+    /// </summary>
+    /// <typeparam name="T">The type to convert to. Usually inferred from <paramref name="defaultValue"/>.</typeparam>
+    /// <param name="name">Name of the ConfigNode's field</param>
+    /// <param name="defaultValue">The value to use when the ConfigNode doesn't contain what we want.</param>
+    /// <returns>The value in the ConfigNode, or <paramref name="defaultValue"/> if no decent value is found there.</returns>
+    private T configValue<T>(string name, T defaultValue)
     {
         string cfgValue = moduleNode.GetValue(name);
-        float value;
-        if (float.TryParse(cfgValue, out value))
-        {
-            return value;
-        }
-        return defaultValue;
-    }
 
-    private bool configValue(string name, bool defaultValue)
-    {
-        string cfgValue = moduleNode.GetValue(name);
-        bool value;
-        if (bool.TryParse(cfgValue, out value))
+        try
         {
-            return value;
+            return (T)Convert.ChangeType(cfgValue, typeof(T));
         }
-        return defaultValue;
-    }
-
-    private double[] configValue(string name, double[] defaultValue)
-    {
-        string cfgValue = moduleNode.GetValue(name);
-        if (string.IsNullOrEmpty(cfgValue))
+        catch (Exception)
         {
             return defaultValue;
         }
-        var values = cfgValue.Split(',');
-        var result = new double[values.Length];
-        int i = 0;
-        foreach (var value in values)
-        {
-            double d;
-            if (!double.TryParse(value, out d))
-            {
-                return defaultValue;
-            }
-            result[i] = d;
-            i++;
-        }
-        return result;
     }
 
     private double defaultScaleFactor
@@ -134,10 +110,10 @@ public class GoodspeedTweakScale : PartModule
         basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
 
         var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
-        scaleFactors = configValue("scaleFactors", defaultValue: new[] { 0.625, 1.25, 2.5, 3.75, 5.0 });
-        range.minValue = configValue("minScale", defaultValue: 0);
-        range.maxValue = configValue("maxScale", defaultValue: scaleFactors.Length - 1);
         isFreeScale = configValue("freeScale", defaultValue: false);
+        scaleFactors = configValue("scaleFactors", defaultValue: new[] { 0.625, 1.25, 2.5, 3.75, 5.0 });
+        range.minValue = configValue("minScale", defaultValue: isFreeScale ? 0.5f : 0f);
+        range.maxValue = configValue("maxScale", defaultValue: scaleFactors.Length - 1f);
         range.stepIncrement = configValue("stepIncrement", defaultValue: isFreeScale ? 0.01f : 1f);
 
         if ( currentScale < 0f )
