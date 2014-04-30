@@ -34,7 +34,7 @@ MODULE
     name = GoodspeedTweakScale
     freeScale = true    // Default false
     stepIncrement = 0.1 // Default 0.01 when freeScale is true
-    minScale = 0.5      // Default 0.0 when freeScale is true
+    minScale = 0.5      // Default 0.5 when freeScale is true
     maxScale = 2.0      // Default 4.0 when freeScale is true
 }
 
