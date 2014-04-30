@@ -38,6 +38,11 @@ public class GoodspeedTweakScale : PartModule
     
     private Vector3 savedScale;
 
+    private PartModule modularFuelTank = null;
+
+    /// <summary>
+    /// The ConfigNode that belongs to this module.
+    /// </summary>
     private ConfigNode moduleNode
     {
         get
@@ -56,15 +61,24 @@ public class GoodspeedTweakScale : PartModule
     /// <returns>The value in the ConfigNode, or <paramref name="defaultValue"/> if no decent value is found there.</returns>
     private T configValue<T>(string name, T defaultValue)
     {
-        string cfgValue = moduleNode.GetValue(name);
-
-        try
-        {
-            return (T)Convert.ChangeType(cfgValue, typeof(T));
-        }
-        catch (Exception)
+        if (!moduleNode.HasValue(name))
         {
             return defaultValue;
+        }
+        string cfgValue = moduleNode.GetValue(name);
+
+        return (T)Convert.ChangeType(cfgValue, typeof(T));
+    }
+
+    private double getScaleFactor(double index)
+    {
+        if (isFreeScale)
+        {
+            return index;
+        }
+        else
+        {
+            return scaleFactors[(int)index];
         }
     }
 
@@ -72,11 +86,7 @@ public class GoodspeedTweakScale : PartModule
     {
         get
         {
-            if (isFreeScale)
-            {
-                return defaultScale;
-            }
-            return scaleFactors[(int)defaultScale];
+            return getScaleFactor(defaultScale);
         }
     }
 
@@ -84,11 +94,7 @@ public class GoodspeedTweakScale : PartModule
     {
         get
         {
-            if (isFreeScale)
-            {
-                return currentScale;
-            }
-            return scaleFactors[(int)currentScale];
+            return getScaleFactor(currentScale);
         }
     }
 
@@ -96,19 +102,24 @@ public class GoodspeedTweakScale : PartModule
     {
         get
         {
-            if (isFreeScale)
-            {
-                return tweakScale;
-            }
-            return scaleFactors[(int)tweakScale];
+            return getScaleFactor(tweakScale);
         }
+    }
+
+    public override void OnLoad(ConfigNode node)
+    {
+        base.OnLoad(node);
+
+        print("freeScale" + node.GetValue("freeScale"));
     }
     
     public override void OnStart(StartState state)
     {
         base.OnStart(state);
         basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
+        modularFuelTank = part.Modules.Cast<PartModule>().SingleOrDefault(a => a.moduleName == "ModuleFuelTanks");
 
+        // Read all non-persistent config values. This needs to be done in case the part file has changed since last we checked (i.e. the game has been restarted and we loaded a ship), or if we copy a part.
         var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
         isFreeScale = configValue("freeScale", defaultValue: false);
         scaleFactors = configValue("scaleFactors", defaultValue: new[] { 0.625, 1.25, 2.5, 3.75, 5.0 });
@@ -197,7 +208,6 @@ public class GoodspeedTweakScale : PartModule
 
         var newResourceValues = part.Resources.Cast<PartResource>().Select(a => new[] { a.amount * rescaleFactor, a.maxAmount * rescaleFactor }).ToArray();
 
-        var modularFuelTank = part.Modules.Cast<PartModule>().SingleOrDefault(a => a.moduleName == "ModuleFuelTanks");
         bool hasModularFuelTank = (object)modularFuelTank != null;
         if (hasModularFuelTank)
         {
