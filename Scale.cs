@@ -17,23 +17,26 @@ using UnityEngine;
 
 public class GoodspeedTweakScale : PartModule
 {
-	[KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "Scale"), UI_FloatRange(minValue = 0f, maxValue = 4f, stepIncrement = 1f)]
-	public float tweakScale = 1;
-	
-	[KSPField(isPersistant = true)]
-    public int currentScale = -1;
-	
-	[KSPField(isPersistant = true)]
-    public int defaultScale = -1;
-	
-	[KSPField(isPersistant = true)]
-	public bool constantHeight = false;
-	
-	private static double[] scaleFactors = {0.625, 1.25, 2.5, 3.75, 5.0};
-	
-	private Part basePart;
-	
-	private Vector3 savedScale;
+    [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "Scale"), UI_FloatRange(minValue = 0f, maxValue = 4f, stepIncrement = 1f)]
+    public float tweakScale = 1;
+    
+    [KSPField(isPersistant = true)]
+    public float currentScale = -1;
+    
+    [KSPField(isPersistant = true)]
+    public float defaultScale = -1;
+    
+    [KSPField(isPersistant = true)]
+    public bool constantHeight = false;
+
+    [KSPField(isPersistant = true)]
+    public bool isFreeScale = false;
+    
+    private double[] scaleFactors = {0.625, 1.25, 2.5, 3.75, 5.0};
+    
+    private Part basePart;
+    
+    private Vector3 savedScale;
 
     private ConfigNode moduleNode
     {
@@ -44,130 +47,199 @@ public class GoodspeedTweakScale : PartModule
         }
     }
 
-    private int configValue(string name, int defaultValue)
+    private float configValue(string name, float defaultValue)
     {
         string cfgValue = moduleNode.GetValue(name);
-        int value;
-        if (int.TryParse(cfgValue, out value))
+        float value;
+        if (float.TryParse(cfgValue, out value))
         {
             return value;
         }
         return defaultValue;
     }
 
-    public GoodspeedTweakScale()
+    private bool configValue(string name, bool defaultValue)
     {
+        string cfgValue = moduleNode.GetValue(name);
+        bool value;
+        if (bool.TryParse(cfgValue, out value))
+        {
+            return value;
+        }
+        return defaultValue;
     }
-	
-	public override void OnStart(StartState state)
-	{
+
+    private double[] configValue(string name, double[] defaultValue)
+    {
+        string cfgValue = moduleNode.GetValue(name);
+        if (string.IsNullOrEmpty(cfgValue))
+        {
+            return defaultValue;
+        }
+        var values = cfgValue.Split(',');
+        var result = new double[values.Length];
+        int i = 0;
+        foreach (var value in values)
+        {
+            double d;
+            if (!double.TryParse(value, out d))
+            {
+                return defaultValue;
+            }
+            result[i] = d;
+            i++;
+        }
+        return result;
+    }
+
+    private double defaultScaleFactor
+    {
+        get
+        {
+            if (isFreeScale)
+            {
+                return defaultScale;
+            }
+            return scaleFactors[(int)defaultScale];
+        }
+    }
+
+    private double currentScaleFactor
+    {
+        get
+        {
+            if (isFreeScale)
+            {
+                return currentScale;
+            }
+            return scaleFactors[(int)currentScale];
+        }
+    }
+
+    private double scaleFactor
+    {
+        get
+        {
+            if (isFreeScale)
+            {
+                return tweakScale;
+            }
+            return scaleFactors[(int)tweakScale];
+        }
+    }
+    
+    public override void OnStart(StartState state)
+    {
         base.OnStart(state);
         basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
 
         var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
+        scaleFactors = configValue("scaleFactors", defaultValue: new[] { 0.625, 1.25, 2.5, 3.75, 5.0 });
         range.minValue = configValue("minScale", defaultValue: 0);
-        range.maxValue = configValue("maxScale", defaultValue: 4);
-        range.stepIncrement = configValue("stepIncrement", defaultValue: 1);
+        range.maxValue = configValue("maxScale", defaultValue: scaleFactors.Length - 1);
+        isFreeScale = configValue("freeScale", defaultValue: false);
+        range.stepIncrement = configValue("stepIncrement", defaultValue: isFreeScale ? 0.01f : 1f);
 
-		if ( currentScale < 0f )
+        if ( currentScale < 0f )
         {
             print("GTS defaultScale == " + defaultScale.ToString());
             tweakScale = currentScale = defaultScale = configValue("defaultScale", defaultValue: 1);
-		}
-		else
-		{
-			double rescaleAbsolute = scaleFactors[(int)tweakScale] / scaleFactors[defaultScale];
-			updateByWidth(rescaleAbsolute, false);
-			part.mass = (float)(basePart.mass * (constantHeight ? rescaleAbsolute * rescaleAbsolute : rescaleAbsolute * rescaleAbsolute * rescaleAbsolute));
-		}
-	}
-	
-	private void moveNode(AttachNode node, AttachNode baseNode, Vector3 rescaleVector, bool movePart)
-	{
-		Vector3 oldPosition = node.position;
-		node.position = Vector3.Scale(baseNode.position, rescaleVector);
-		if ( movePart && node.attachedPart != null )
-		{
-			if ( node.attachedPart == part.parent )
-				part.transform.Translate(oldPosition - node.position);
-			else
-				node.attachedPart.transform.Translate(node.position - oldPosition, part.transform);
-		}
-        node.size = baseNode.size + (int)tweakScale - defaultScale;
-		if ( node.size < 0 ) node.size = 0;
-		node.breakingForce = part.breakingForce;
-		node.breakingTorque = part.breakingTorque;
-	}
-	
-	private void updateByWidth(double rescaleFactor, bool moveParts)
-	{
-		Vector3 rescaleVector = new Vector3((float)rescaleFactor, constantHeight ? 1f : (float)rescaleFactor, (float)rescaleFactor);
-		
-		savedScale = part.transform.GetChild(0).localScale = Vector3.Scale(basePart.transform.GetChild(0).localScale, rescaleVector);
-		part.transform.GetChild(0).hasChanged = true;
-		part.transform.hasChanged = true;
-		
-		foreach ( AttachNode node in part.attachNodes )
-			moveNode(node, basePart.findAttachNode(node.id), rescaleVector, moveParts);
-		if ( part.srfAttachNode != null )
-			moveNode(part.srfAttachNode, basePart.srfAttachNode, rescaleVector, moveParts);
-		if ( moveParts )
-		{
-            float relativeFactor = (float)(scaleFactors[(int)tweakScale] / scaleFactors[currentScale]);
-			Vector3 relativeVector = new Vector3(relativeFactor, constantHeight ? 1f : relativeFactor, relativeFactor);
-			foreach ( Part child in part.children )
-			{
-				if ( child.srfAttachNode != null && child.srfAttachNode.attachedPart == part ) // part is attached to us, but not on a node
-				{
-					Vector3 attachedPosition = child.transform.localPosition + child.transform.localRotation * child.srfAttachNode.position;
-					Vector3 targetPosition = Vector3.Scale(attachedPosition, relativeVector);
-					child.transform.Translate(targetPosition - attachedPosition, part.transform);
-				}
-			}
-		}
-	}
-	
-	private void updateBySurfaceArea(double rescaleFactor) // values that change relative to the surface area (i.e. scale squared)
-	{
-		if ( basePart.breakingForce == 22f ) // not defined in the config, set to a reasonable default
-            part.breakingForce = (float)(32.0 * scaleFactors[(int)tweakScale] * scaleFactors[(int)tweakScale]); // scale 1 = 50, scale 2 = 200, etc.
-		else // is defined, scale it relative to new surface area
-			part.breakingForce = (float)(basePart.breakingForce  * rescaleFactor);
-		if ( part.breakingForce < 22f )
+        }
+        else
+        {
+            double rescaleAbsolute = scaleFactor / defaultScaleFactor;
+            updateByWidth(rescaleAbsolute, false);
+            part.mass = (float)(basePart.mass * (constantHeight ? rescaleAbsolute * rescaleAbsolute : rescaleAbsolute * rescaleAbsolute * rescaleAbsolute));
+        }
+    }
+    
+    private void moveNode(AttachNode node, AttachNode baseNode, Vector3 rescaleVector, bool movePart)
+    {
+        Vector3 oldPosition = node.position;
+        node.position = Vector3.Scale(baseNode.position, rescaleVector);
+        if ( movePart && node.attachedPart != null )
+        {
+            if ( node.attachedPart == part.parent )
+                part.transform.Translate(oldPosition - node.position);
+            else
+                node.attachedPart.transform.Translate(node.position - oldPosition, part.transform);
+        }
+        node.size = (int)(baseNode.size + tweakScale - defaultScale);
+        if ( node.size < 0 ) node.size = 0;
+        node.breakingForce = part.breakingForce;
+        node.breakingTorque = part.breakingTorque;
+    }
+    
+    private void updateByWidth(double rescaleFactor, bool moveParts)
+    {
+        Vector3 rescaleVector = new Vector3((float)rescaleFactor, constantHeight ? 1f : (float)rescaleFactor, (float)rescaleFactor);
+        
+        savedScale = part.transform.GetChild(0).localScale = Vector3.Scale(basePart.transform.GetChild(0).localScale, rescaleVector);
+        part.transform.GetChild(0).hasChanged = true;
+        part.transform.hasChanged = true;
+        
+        foreach ( AttachNode node in part.attachNodes )
+            moveNode(node, basePart.findAttachNode(node.id), rescaleVector, moveParts);
+        if ( part.srfAttachNode != null )
+            moveNode(part.srfAttachNode, basePart.srfAttachNode, rescaleVector, moveParts);
+        if ( moveParts )
+        {
+            float relativeFactor = (float)(scaleFactor / currentScaleFactor);
+            Vector3 relativeVector = new Vector3(relativeFactor, constantHeight ? 1f : relativeFactor, relativeFactor);
+            foreach ( Part child in part.children )
+            {
+                if ( child.srfAttachNode != null && child.srfAttachNode.attachedPart == part ) // part is attached to us, but not on a node
+                {
+                    Vector3 attachedPosition = child.transform.localPosition + child.transform.localRotation * child.srfAttachNode.position;
+                    Vector3 targetPosition = Vector3.Scale(attachedPosition, relativeVector);
+                    child.transform.Translate(targetPosition - attachedPosition, part.transform);
+                }
+            }
+        }
+    }
+    
+    private void updateBySurfaceArea(double rescaleFactor) // values that change relative to the surface area (i.e. scale squared)
+    {
+        if ( basePart.breakingForce == 22f ) // not defined in the config, set to a reasonable default
+            part.breakingForce = (float)(32.0 * scaleFactor * scaleFactor); // scale 1 = 50, scale 2 = 200, etc.
+        else // is defined, scale it relative to new surface area
+            part.breakingForce = (float)(basePart.breakingForce  * rescaleFactor);
+        if ( part.breakingForce < 22f )
             part.breakingForce = 22f;
-		
-		if ( basePart.breakingTorque == 22f )
-            part.breakingTorque = (float)(32.0 * scaleFactors[(int)tweakScale] * scaleFactors[(int)tweakScale]);
-		else
-			part.breakingTorque = (float)(basePart.breakingTorque * rescaleFactor);
-		if ( part.breakingTorque < 22f )
+        
+        if ( basePart.breakingTorque == 22f )
+            part.breakingTorque = (float)(32.0 * scaleFactor * scaleFactor);
+        else
+            part.breakingTorque = (float)(basePart.breakingTorque * rescaleFactor);
+        if ( part.breakingTorque < 22f )
             part.breakingTorque = 22f;
-	}
-	
-	private void updateByRelativeVolume(double rescaleFactor) // values that change relative to the volume (i.e. scale cubed)
-	{
+    }
+    
+    private void updateByRelativeVolume(double rescaleFactor) // values that change relative to the volume (i.e. scale cubed)
+    {
         part.mass = (float)(part.mass * rescaleFactor);
 
         var newResourceValues = part.Resources.Cast<PartResource>().Select(a => new[] { a.amount * rescaleFactor, a.maxAmount * rescaleFactor }).ToArray();
 
-        var ft = part.Modules.Cast<PartModule>().SingleOrDefault(a => a.moduleName == "ModuleFuelTanks");
-        if ((object)ft != null)
+        var modularFuelTank = part.Modules.Cast<PartModule>().SingleOrDefault(a => a.moduleName == "ModuleFuelTanks");
+        bool hasModularFuelTank = (object)modularFuelTank != null;
+        if (hasModularFuelTank)
         {
-            updateFuelTankVolume(ft, rescaleFactor);
+            updateFuelTankVolume(modularFuelTank, rescaleFactor);
         }
         int i = 0;
-        foreach (PartResource res in part.Resources)
+        foreach (PartResource resource in part.Resources)
         {
-            var values = newResourceValues[i];
-            res.amount = values[0];
-            res.maxAmount = values[1];
+            var newValues = newResourceValues[i];
+            resource.amount = newValues[0];
+            resource.maxAmount = newValues[1];
             i++;
         }
-        if ((object)ft != null)
+        if (hasModularFuelTank)
         {
-            updateFuelTankMass(ft);
+            updateFuelTankMass(modularFuelTank);
         }
-	}
+    }
 
     private void updateFuelTankMass(PartModule pm)
     {
@@ -185,34 +257,34 @@ public class GoodspeedTweakScale : PartModule
         fueltank.volume *= rescaleFactor;
         fueltank.UpdateMass();
     }
-	
-	private void updateWindow() // redraw the right-click window with the updated stats
-	{
-		foreach ( UIPartActionWindow win in FindObjectsOfType(typeof(UIPartActionWindow)) )
-			if ( win.part == part )
-				win.displayDirty = true;
-	}
-	
-	public void Update()
-	{
-		if ( HighLogic.LoadedSceneIsEditor && currentScale >= 0f )
+    
+    private void updateWindow() // redraw the right-click window with the updated stats
+    {
+        foreach ( UIPartActionWindow win in FindObjectsOfType(typeof(UIPartActionWindow)) )
+            if ( win.part == part )
+                win.displayDirty = true;
+    }
+    
+    public void Update()
+    {
+        if ( HighLogic.LoadedSceneIsEditor && currentScale >= 0f )
         {
-			if ( tweakScale != currentScale ) // user has changed the scale tweakable
-			{
-                double rescaleAbsolute = scaleFactors[(int)tweakScale] / scaleFactors[defaultScale];
-                double rescaleRelative = scaleFactors[(int)tweakScale] / scaleFactors[currentScale];
-				
-				updateBySurfaceArea(rescaleAbsolute * rescaleAbsolute); // call this first, results are used by updateByWidth
-				updateByWidth(rescaleAbsolute, true);
-				updateByRelativeVolume(constantHeight ? rescaleRelative * rescaleRelative : rescaleRelative * rescaleRelative * rescaleRelative);
-				updateWindow(); // call this last
+            if ( tweakScale != currentScale ) // user has changed the scale tweakable
+            {
+                double rescaleAbsolute = scaleFactor / defaultScaleFactor;
+                double rescaleRelative = scaleFactor / currentScaleFactor;
+                
+                updateBySurfaceArea(rescaleAbsolute * rescaleAbsolute); // call this first, results are used by updateByWidth
+                updateByWidth(rescaleAbsolute, true);
+                updateByRelativeVolume(constantHeight ? rescaleRelative * rescaleRelative : rescaleRelative * rescaleRelative * rescaleRelative);
+                updateWindow(); // call this last
 
-                currentScale = (int)tweakScale;
-			}
-			else if ( part.transform.GetChild(0).localScale != savedScale ) // editor frequently nukes our OnStart resize some time later
-			{
-                updateByWidth(scaleFactors[(int)tweakScale] / scaleFactors[defaultScale], false);
-			}
-		}
-	}
+                currentScale = tweakScale;
+            }
+            else if ( part.transform.GetChild(0).localScale != savedScale ) // editor frequently nukes our OnStart resize some time later
+            {
+                updateByWidth(scaleFactor / defaultScaleFactor, false);
+            }
+        }
+    }
 }
