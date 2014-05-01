@@ -14,6 +14,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using ModularFuelTanks;
+//using RealFuels;
 
 public class GoodspeedTweakScale : PartModule
 {
@@ -222,14 +224,14 @@ public class GoodspeedTweakScale : PartModule
 
     private void updateFuelTankMass(PartModule pm)
     {
-        var fueltank = (RealFuels.ModuleFuelTanks)pm;
+        var fueltank = (ModuleFuelTanks)pm;
         fueltank.UpdateMass();
-        fueltank.UpdateTweakableMenu();
+        //fueltank.UpdateTweakableMenu();
     }
 
     private void updateFuelTankVolume(PartModule pm, double rescaleFactor)
     {
-        var fueltank = (RealFuels.ModuleFuelTanks)pm;
+        var fueltank = (ModuleFuelTanks)pm;
 
         fueltank.basemass = (float)(fueltank.basemass * rescaleFactor);
         fueltank.basemassPV = (float)(fueltank.basemassPV * rescaleFactor);
