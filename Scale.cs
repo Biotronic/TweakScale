@@ -105,13 +105,6 @@ public class GoodspeedTweakScale : PartModule
             return getScaleFactor(tweakScale);
         }
     }
-
-    public override void OnLoad(ConfigNode node)
-    {
-        base.OnLoad(node);
-
-        print("freeScale" + node.GetValue("freeScale"));
-    }
     
     public override void OnStart(StartState state)
     {
