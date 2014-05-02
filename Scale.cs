@@ -14,11 +14,54 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using ModularFuelTanks;
-//using RealFuels;
 
 public class GoodspeedTweakScale : PartModule
 {
+    interface GoodspeedUpdater
+    {
+        void update1(double rescaleFactor);
+        void update2();
+    }
+
+    class GoodspeedMFTUpdater : GoodspeedUpdater
+    {
+        PartModule pm;
+
+        public GoodspeedMFTUpdater(PartModule pm)
+        {
+            this.pm = pm;
+        }
+
+        public void update1(double rescaleFactor)
+        {
+            var fueltank = (ModularFuelTanks.ModuleFuelTanks)pm;
+
+            fueltank.basemass = (float)(fueltank.basemass * rescaleFactor);
+            fueltank.basemassPV = (float)(fueltank.basemassPV * rescaleFactor);
+            fueltank.volume *= rescaleFactor;
+            fueltank.UpdateMass();
+        }
+
+        public void update2()
+        {
+            var fueltank = (ModularFuelTanks.ModuleFuelTanks)pm;
+            fueltank.UpdateMass();
+            //fueltank.UpdateTweakableMenu();
+        }
+    }
+
+    class GoodspeedRegularUpdater : GoodspeedUpdater
+    {
+        public void update1(double rescaleFactor)
+        {
+        }
+
+        public void update2()
+        {
+        }
+    }
+
+
     [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "Scale"), UI_FloatRange(minValue = 0f, maxValue = 4f, stepIncrement = 1f)]
     public float tweakScale = 1;
     
@@ -40,7 +83,7 @@ public class GoodspeedTweakScale : PartModule
     
     private Vector3 savedScale;
 
-    private PartModule modularFuelTank = null;
+    private GoodspeedUpdater updater;
 
     /// <summary>
     /// The ConfigNode that belongs to this module.
@@ -112,7 +155,8 @@ public class GoodspeedTweakScale : PartModule
     {
         base.OnStart(state);
         basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
-        modularFuelTank = part.Modules.Cast<PartModule>().SingleOrDefault(a => a.moduleName == "ModuleFuelTanks");
+        var fueltank = part.Modules.Cast<PartModule>().SingleOrDefault(a => a.moduleName == "ModuleFuelTanks");
+        updater = (object)fueltank == null ? (GoodspeedUpdater)new GoodspeedRegularUpdater() : new GoodspeedMFTUpdater(fueltank);
 
         // Read all non-persistent config values. This needs to be done in case the part file has changed since last we checked (i.e. the game has been restarted and we loaded a ship), or if we copy a part.
         var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
@@ -201,13 +245,9 @@ public class GoodspeedTweakScale : PartModule
     {
         part.mass = (float)(part.mass * rescaleFactor);
 
-        var newResourceValues = part.Resources.Cast<PartResource>().Select(a => new[] { a.amount * rescaleFactor, a.maxAmount * rescaleFactor }).ToArray();
+        var newResourceValues = part.Resources.OfType<PartResource>().Select(a => new[] { a.amount * rescaleFactor, a.maxAmount * rescaleFactor }).ToArray();
 
-        bool hasModularFuelTank = (object)modularFuelTank != null;
-        if (hasModularFuelTank)
-        {
-            updateFuelTankVolume(modularFuelTank, rescaleFactor);
-        }
+        updater.update1(rescaleFactor);
         int i = 0;
         foreach (PartResource resource in part.Resources)
         {
@@ -216,27 +256,7 @@ public class GoodspeedTweakScale : PartModule
             resource.maxAmount = newValues[1];
             i++;
         }
-        if (hasModularFuelTank)
-        {
-            updateFuelTankMass(modularFuelTank);
-        }
-    }
-
-    private void updateFuelTankMass(PartModule pm)
-    {
-        var fueltank = (ModuleFuelTanks)pm;
-        fueltank.UpdateMass();
-        //fueltank.UpdateTweakableMenu();
-    }
-
-    private void updateFuelTankVolume(PartModule pm, double rescaleFactor)
-    {
-        var fueltank = (ModuleFuelTanks)pm;
-
-        fueltank.basemass = (float)(fueltank.basemass * rescaleFactor);
-        fueltank.basemassPV = (float)(fueltank.basemassPV * rescaleFactor);
-        fueltank.volume *= rescaleFactor;
-        fueltank.UpdateMass();
+        updater.update2();
     }
     
     private void updateWindow() // redraw the right-click window with the updated stats
