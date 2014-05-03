@@ -17,17 +17,54 @@ using UnityEngine;
 
 public class GoodspeedTweakScale : PartModule
 {
-    interface GoodspeedUpdater
+    interface TweakScaleUpdater
     {
         void update1(double rescaleFactor);
         void update2();
     }
 
-    class GoodspeedMFTUpdater : GoodspeedUpdater
+    class TweakScaleRegularUpdater : TweakScaleUpdater
+    {
+        public void update1(double rescaleFactor)
+        {
+        }
+
+        public void update2()
+        {
+        }
+    }
+
+    class TweakScaleRealFuelUpdater : TweakScaleUpdater
     {
         PartModule pm;
 
-        public GoodspeedMFTUpdater(PartModule pm)
+        public TweakScaleRealFuelUpdater(PartModule pm)
+        {
+            this.pm = pm;
+        }
+
+        public void update1(double rescaleFactor)
+        {
+            var fueltank = (RealFuels.ModuleFuelTanks)pm;
+            fueltank.basemass = (float)(fueltank.basemass * rescaleFactor);
+            fueltank.basemassPV = (float)(fueltank.basemassPV * rescaleFactor);
+            fueltank.volume *= rescaleFactor;
+            fueltank.UpdateMass();
+        }
+
+        public void update2()
+        {
+            var fueltank = (RealFuels.ModuleFuelTanks)pm;
+            fueltank.UpdateMass();
+            //fueltank.UpdateTweakableMenu();
+        }
+    }
+
+    class TweakScaleModularFuelTanks4_3Updater : TweakScaleUpdater
+    {
+        PartModule pm;
+
+        public TweakScaleModularFuelTanks4_3Updater(PartModule pm)
         {
             this.pm = pm;
         }
@@ -35,7 +72,6 @@ public class GoodspeedTweakScale : PartModule
         public void update1(double rescaleFactor)
         {
             var fueltank = (ModularFuelTanks.ModuleFuelTanks)pm;
-
             fueltank.basemass = (float)(fueltank.basemass * rescaleFactor);
             fueltank.basemassPV = (float)(fueltank.basemassPV * rescaleFactor);
             fueltank.volume *= rescaleFactor;
@@ -47,17 +83,6 @@ public class GoodspeedTweakScale : PartModule
             var fueltank = (ModularFuelTanks.ModuleFuelTanks)pm;
             fueltank.UpdateMass();
             //fueltank.UpdateTweakableMenu();
-        }
-    }
-
-    class GoodspeedRegularUpdater : GoodspeedUpdater
-    {
-        public void update1(double rescaleFactor)
-        {
-        }
-
-        public void update2()
-        {
         }
     }
 
@@ -83,7 +108,7 @@ public class GoodspeedTweakScale : PartModule
     
     private Vector3 savedScale;
 
-    private GoodspeedUpdater updater;
+    private TweakScaleUpdater updater;
 
     /// <summary>
     /// The ConfigNode that belongs to this module.
@@ -150,13 +175,27 @@ public class GoodspeedTweakScale : PartModule
             return getScaleFactor(tweakScale);
         }
     }
+
+    private TweakScaleUpdater createUpdater()
+    {
+        var fueltank = part.Modules.Cast<PartModule>().SingleOrDefault(a => a.moduleName == "ModuleFuelTanks");
+        if ((object)fueltank != null)
+        {
+            var name = fueltank.GetType().FullName;
+            if (name == "ModularFuelTanks.ModuleFuelTanks")
+                return new TweakScaleModularFuelTanks4_3Updater(fueltank);
+            else if (name == "RealFuels.ModuleFuelTanks")
+                return new TweakScaleRealFuelUpdater(fueltank);
+        }
+        return new TweakScaleRegularUpdater();
+    }
     
     public override void OnStart(StartState state)
     {
         base.OnStart(state);
         basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
-        var fueltank = part.Modules.Cast<PartModule>().SingleOrDefault(a => a.moduleName == "ModuleFuelTanks");
-        updater = (object)fueltank == null ? (GoodspeedUpdater)new GoodspeedRegularUpdater() : new GoodspeedMFTUpdater(fueltank);
+
+        updater = createUpdater();
 
         // Read all non-persistent config values. This needs to be done in case the part file has changed since last we checked (i.e. the game has been restarted and we loaded a ship), or if we copy a part.
         var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
