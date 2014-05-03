@@ -38,6 +38,10 @@
       <HintPath>..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\ModularFuelTanks\Plugins\modularFuelTanks.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="RealFuels">
+      <HintPath>..\ModularFuelTanks\RealFuels.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
