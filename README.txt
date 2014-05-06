@@ -16,7 +16,13 @@ Custom scale factors!
     Do you need 0.3125m scale in addition to the more common ones? Just add it! The maxScale and minScale automatically adapts to the number of scale factors.
 
 Free scaling!
-    Mostly for trusses, I think. Lets you create parts of any size.
+    Lets you create parts of any size. Great for trusses, lights, probably other stuff.
+
+Solar panels!
+    Solar panel performance now scales with the surface area of the panels.
+
+More control over mass!
+    For hollow, structural parts, mass probably scales with the surface area rather than the volume.
 
 
 Example MODULE declarations:
@@ -42,6 +48,12 @@ MODULE
 {
     name = GoodspeedTweakScale
     scaleFactors = 0.625, 1.25, 2.5, 3.75, 5.0 // Default range of scale factors
+}
+
+MODULE
+{
+    name = GoodspeedTweakScale
+    massFactors = 0, 1, 0 // Scale with surface area, not volume
 }
 
 
