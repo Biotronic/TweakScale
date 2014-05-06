@@ -7,11 +7,14 @@ namespace TweakScale
 {
     abstract class TweakScaleUpdater
     {
-        static Dictionary<string, Func<PartModule, TweakScaleUpdater>> ctors = new Dictionary<string,Func<PartModule, TweakScaleUpdater>>();
+        // Every kind of updater is registered here, and the correct kind of updater is created for each PartModule.
+        static Dictionary<string, Func<PartModule, TweakScaleUpdater>> ctors = new Dictionary<string, Func<PartModule, TweakScaleUpdater>>();
         static TweakScaleUpdater()
         {
+            // Initialize above array.
             ctors["ModularFuelTanks.ModuleFuelTanks"] = a => new TweakScaleModularFuelTanks4_3Updater(a);
             ctors["RealFuels.ModuleFuelTanks"] = a => new TweakScaleRealFuelUpdater(a);
+            ctors["ModuleDeployableSolarPanel"] = a => new TweakScaleSolarPanelUpdater(a);
         }
 
         protected PartModule _module;
@@ -24,13 +27,10 @@ namespace TweakScale
             _module = module;
         }
 
-        abstract public void preUpdate(double rescaleFactor);
-
-        abstract public void postUpdate();
-
+        // Creates an updater for each module attached to a part.
         public static TweakScaleUpdater[] createUpdaters(Part part)
         {
-            return part.Modules.Cast<PartModule>().Select(createUpdater).ToArray();
+            return part.Modules.Cast<PartModule>().Select(createUpdater).Where(a => (object)a != null).ToArray();
         }
 
         private static TweakScaleUpdater createUpdater(PartModule module)
@@ -40,36 +40,17 @@ namespace TweakScale
             {
                 return ctors[name](module);
             }
-            return TweakScaleRegularUpdater.instance;
+            return null;
         }
+
+        // Called before updating resources.
+        abstract public void preUpdate(ScalingFactor factor);
+
+        // Called after updating resources.
+        abstract public void postUpdate(ScalingFactor factor);
     }
 
-    class TweakScaleRegularUpdater : TweakScaleUpdater
-    {
-        private static TweakScaleRegularUpdater _instance = new TweakScaleRegularUpdater(null);
-
-        public TweakScaleRegularUpdater(PartModule pm)
-            : base(pm)
-        {
-        }
-
-        public static TweakScaleRegularUpdater instance
-        {
-            get
-            {
-                return _instance;
-            }
-        }
-
-        override public void preUpdate(double rescaleFactor)
-        {
-        }
-
-        override public void postUpdate()
-        {
-        }
-    }
-
+    // For new-style (>v4.3) Real Fuels and Modular Fuel Tanks.
     class TweakScaleRealFuelUpdater : TweakScaleUpdater
     {
         public TweakScaleRealFuelUpdater(PartModule pm)
@@ -85,21 +66,22 @@ namespace TweakScale
             }
         }
 
-        override public void preUpdate(double rescaleFactor)
+        override public void preUpdate(ScalingFactor factor)
         {
-            module.basemass = (float)(module.basemass * rescaleFactor);
-            module.basemassPV = (float)(module.basemassPV * rescaleFactor);
-            module.volume *= rescaleFactor;
+            module.basemass = (float)(module.basemass * factor.relative.cubic);
+            module.basemassPV = (float)(module.basemassPV * factor.relative.cubic);
+            module.volume *= factor.relative.cubic;
             module.UpdateMass();
         }
 
-        override public void postUpdate()
+        override public void postUpdate(ScalingFactor factor)
         {
             module.UpdateMass();
             module.UpdateTweakableMenu();
         }
     }
 
+    // For old-style Modular Fuel Tanks.
     class TweakScaleModularFuelTanks4_3Updater : TweakScaleUpdater
     {
         public TweakScaleModularFuelTanks4_3Updater(PartModule pm)
@@ -115,17 +97,42 @@ namespace TweakScale
             }
         }
 
-        override public void preUpdate(double rescaleFactor)
+        override public void preUpdate(ScalingFactor factor)
         {
-            module.basemass = (float)(module.basemass * rescaleFactor);
-            module.basemassPV = (float)(module.basemassPV * rescaleFactor);
-            module.volume *= rescaleFactor;
+            module.basemass = (float)(module.basemass * factor.relative.cubic);
+            module.basemassPV = (float)(module.basemassPV * factor.relative.cubic);
+            module.volume *= factor.relative.cubic;
             module.UpdateMass();
         }
 
-        override public void postUpdate()
+        override public void postUpdate(ScalingFactor factor)
         {
             module.UpdateMass();
+        }
+    }
+
+    class TweakScaleSolarPanelUpdater : TweakScaleUpdater
+    {
+        public TweakScaleSolarPanelUpdater(PartModule pm)
+            : base(pm)
+        {
+        }
+
+        ModuleDeployableSolarPanel module
+        {
+            get
+            {
+                return (ModuleDeployableSolarPanel)_module;
+            }
+        }
+
+        public override void preUpdate(ScalingFactor factor)
+        {
+        }
+
+        public override void postUpdate(ScalingFactor factor)
+        {
+            module.chargeRate = (float)(module.chargeRate * factor.relative.quadratic);
         }
     }
 }

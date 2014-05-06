@@ -17,7 +17,10 @@ using UnityEngine;
 
 namespace TweakScale
 {
-    public class GoodspeedTweakScale : PartModule
+    public class GoodspeedTweakScale : TweakScale
+    {
+    }
+    public class TweakScale : PartModule
     {
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "Scale"), UI_FloatRange(minValue = 0f, maxValue = 4f, stepIncrement = 1f)]
         public float tweakScale = 1;
@@ -29,12 +32,11 @@ namespace TweakScale
         public float defaultScale = -1;
 
         [KSPField(isPersistant = true)]
-        public bool constantHeight = false;
-
-        [KSPField(isPersistant = true)]
         public bool isFreeScale = false;
 
         private double[] scaleFactors = { 0.625, 1.25, 2.5, 3.75, 5.0 };
+
+        private double[] massFactors = {0, 0, 1};
 
         private Part basePart;
 
@@ -84,29 +86,14 @@ namespace TweakScale
             }
         }
 
-        private double defaultScaleFactor
+        private ScalingFactor scalingFactor
         {
             get
             {
-                return getScaleFactor(defaultScale);
+                return new ScalingFactor(getScaleFactor(tweakScale) / getScaleFactor(defaultScale), getScaleFactor(tweakScale) / getScaleFactor(currentScale));
             }
         }
 
-        private double currentScaleFactor
-        {
-            get
-            {
-                return getScaleFactor(currentScale);
-            }
-        }
-
-        private double scaleFactor
-        {
-            get
-            {
-                return getScaleFactor(tweakScale);
-            }
-        }
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
@@ -118,6 +105,7 @@ namespace TweakScale
             var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
             isFreeScale = configValue("freeScale", defaultValue: false);
             scaleFactors = configValue("scaleFactors", defaultValue: new[] { 0.625, 1.25, 2.5, 3.75, 5.0 });
+            massFactors = configValue("massFactors", defaultValue: new[] { 0, 0, 1.0 });
             range.minValue = configValue("minScale", defaultValue: isFreeScale ? 0.5f : 0f);
             range.maxValue = configValue("maxScale", defaultValue: scaleFactors.Length - 1f);
             range.stepIncrement = configValue("stepIncrement", defaultValue: isFreeScale ? 0.01f : 1f);
@@ -129,9 +117,8 @@ namespace TweakScale
             }
             else
             {
-                double rescaleAbsolute = scaleFactor / defaultScaleFactor;
-                updateByWidth(rescaleAbsolute, false);
-                part.mass = (float)(basePart.mass * (constantHeight ? rescaleAbsolute * rescaleAbsolute : rescaleAbsolute * rescaleAbsolute * rescaleAbsolute));
+                updateByWidth(scalingFactor, false);
+                part.mass = (float)(basePart.mass * scalingFactor.absolute.cubic);
             }
         }
 
@@ -152,9 +139,9 @@ namespace TweakScale
             node.breakingTorque = part.breakingTorque;
         }
 
-        private void updateByWidth(double rescaleFactor, bool moveParts)
+        private void updateByWidth(ScalingFactor factor, bool moveParts)
         {
-            Vector3 rescaleVector = new Vector3((float)rescaleFactor, constantHeight ? 1f : (float)rescaleFactor, (float)rescaleFactor);
+            Vector3 rescaleVector = new Vector3((float)factor.absolute.linear, (float)factor.absolute.linear, (float)factor.absolute.linear);
 
             savedScale = part.transform.GetChild(0).localScale = Vector3.Scale(basePart.transform.GetChild(0).localScale, rescaleVector);
             part.transform.GetChild(0).hasChanged = true;
@@ -166,8 +153,7 @@ namespace TweakScale
                 moveNode(part.srfAttachNode, basePart.srfAttachNode, rescaleVector, moveParts);
             if (moveParts)
             {
-                float relativeFactor = (float)(scaleFactor / currentScaleFactor);
-                Vector3 relativeVector = new Vector3(relativeFactor, constantHeight ? 1f : relativeFactor, relativeFactor);
+                Vector3 relativeVector = new Vector3((float)factor.relative.linear, (float)factor.relative.linear, (float)factor.relative.linear);
                 foreach (Part child in part.children)
                 {
                     if (child.srfAttachNode != null && child.srfAttachNode.attachedPart == part) // part is attached to us, but not on a node
@@ -177,55 +163,64 @@ namespace TweakScale
                         child.transform.Translate(targetPosition - attachedPosition, part.transform);
                     }
                 }
-            }
+            };
         }
 
-        private void updateBySurfaceArea(double rescaleFactor) // values that change relative to the surface area (i.e. scale squared)
+        private void updateBySurfaceArea(ScalingFactor factor) // values that change relative to the surface area (i.e. scale squared)
         {
             if (basePart.breakingForce == 22f) // not defined in the config, set to a reasonable default
-                part.breakingForce = (float)(32.0 * scaleFactor * scaleFactor); // scale 1 = 50, scale 2 = 200, etc.
+                part.breakingForce = (float)(32.0 * factor.relative.quadratic); // scale 1 = 50, scale 2 = 200, etc.
             else // is defined, scale it relative to new surface area
-                part.breakingForce = (float)(basePart.breakingForce * rescaleFactor);
+                part.breakingForce = (float)(basePart.breakingForce * factor.absolute.quadratic);
             if (part.breakingForce < 22f)
                 part.breakingForce = 22f;
 
             if (basePart.breakingTorque == 22f)
-                part.breakingTorque = (float)(32.0 * scaleFactor * scaleFactor);
+                part.breakingTorque = (float)(32.0 * factor.relative.quadratic);
             else
-                part.breakingTorque = (float)(basePart.breakingTorque * rescaleFactor);
+                part.breakingTorque = (float)(basePart.breakingTorque * factor.absolute.quadratic);
             if (part.breakingTorque < 22f)
                 part.breakingTorque = 22f;
         }
 
-        private void updateByRelativeVolume(double rescaleFactor) // values that change relative to the volume (i.e. scale cubed)
+        private void updateByRelativeVolume(ScalingFactor factor) // values that change relative to the volume (i.e. scale cubed)
         {
-            part.mass = (float)(part.mass * rescaleFactor);
 
-            var newResourceValues = part.Resources.OfType<PartResource>().Select(a => new[] { a.amount * rescaleFactor, a.maxAmount * rescaleFactor }).ToArray();
+            part.mass = (float)(part.mass * massFactors.Select((a, i) => Math.Pow(a * factor.relative.linear, i + 1)).Sum());
 
-            foreach (var updater in updaters)
-            {
-                updater.preUpdate(rescaleFactor);
-            }
-            int i = 0;
+            var newResourceValues = part.Resources.OfType<PartResource>().Select(a => new[] { a.amount * factor.relative.cubic, a.maxAmount * factor.relative.cubic }).ToArray();
+
+            int idx = 0;
             foreach (PartResource resource in part.Resources)
             {
-                var newValues = newResourceValues[i];
+                var newValues = newResourceValues[idx];
                 resource.amount = newValues[0];
                 resource.maxAmount = newValues[1];
-                i++;
+                idx++;
             }
-            foreach (var updater in updaters)
+        }
+
+        private bool hasResources
+        {
+            get
             {
-                updater.postUpdate();
+                return part.Resources.Count > 0;
             }
         }
 
         private void updateWindow() // redraw the right-click window with the updated stats
         {
-            foreach (UIPartActionWindow win in FindObjectsOfType(typeof(UIPartActionWindow)))
-                if (win.part == part)
-                    win.displayDirty = true;
+            if (!isFreeScale && hasResources)
+            {
+                foreach (UIPartActionWindow win in FindObjectsOfType(typeof(UIPartActionWindow)))
+                {
+                    if (win.part == part)
+                    {
+                        // This causes the slider to be non-responsive - i.e. after you click once, you must click again, not drag the slider.
+                        win.displayDirty = true;
+                    }
+                }
+            }
         }
 
         public void Update()
@@ -234,19 +229,24 @@ namespace TweakScale
             {
                 if (tweakScale != currentScale) // user has changed the scale tweakable
                 {
-                    double rescaleAbsolute = scaleFactor / defaultScaleFactor;
-                    double rescaleRelative = scaleFactor / currentScaleFactor;
-
-                    updateBySurfaceArea(rescaleAbsolute * rescaleAbsolute); // call this first, results are used by updateByWidth
-                    updateByWidth(rescaleAbsolute, true);
-                    updateByRelativeVolume(constantHeight ? rescaleRelative * rescaleRelative : rescaleRelative * rescaleRelative * rescaleRelative);
+                    foreach (var updater in updaters)
+                    {
+                        updater.preUpdate(scalingFactor);
+                    }
+                    updateBySurfaceArea(scalingFactor); // call this first, results are used by updateByWidth
+                    updateByWidth(scalingFactor, true);
+                    updateByRelativeVolume(scalingFactor);
+                    foreach (var updater in updaters)
+                    {
+                        updater.postUpdate(scalingFactor);
+                    }
                     updateWindow(); // call this last
 
                     currentScale = tweakScale;
                 }
                 else if (part.transform.GetChild(0).localScale != savedScale) // editor frequently nukes our OnStart resize some time later
                 {
-                    updateByWidth(scaleFactor / defaultScaleFactor, false);
+                    updateByWidth(scalingFactor, false);
                 }
             }
         }
