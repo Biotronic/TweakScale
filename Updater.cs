@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace TweakScale
 {
@@ -38,10 +39,14 @@ namespace TweakScale
             var name = module.GetType().FullName;
             if (ctors.ContainsKey(name))
             {
+                MonoBehaviour.print("Creating updater for " + name);
                 return ctors[name](module);
             }
             return null;
         }
+
+        // Called on start. Use this for setting up non-persistent values.
+        abstract public void onStart(ScalingFactor factor);
 
         // Called before updating resources.
         abstract public void preUpdate(ScalingFactor factor);
@@ -79,6 +84,10 @@ namespace TweakScale
             module.UpdateMass();
             module.UpdateTweakableMenu();
         }
+
+        public override void onStart(ScalingFactor factor)
+        {
+        }
     }
 
     // For old-style Modular Fuel Tanks.
@@ -109,6 +118,10 @@ namespace TweakScale
         {
             module.UpdateMass();
         }
+
+        public override void onStart(ScalingFactor factor)
+        {
+        }
     }
 
     class TweakScaleSolarPanelUpdater : TweakScaleUpdater
@@ -132,7 +145,13 @@ namespace TweakScale
 
         public override void postUpdate(ScalingFactor factor)
         {
-            module.chargeRate = (float)(module.chargeRate * factor.relative.quadratic);
+        }
+
+        public override void onStart(ScalingFactor factor)
+        {
+            module.chargeRate = (float)(module.chargeRate * factor.absolute.quadratic);
+            module.flowRate = (float)(module.flowRate * factor.absolute.quadratic);
+            module.panelMass = (float)(module.panelMass * factor.absolute.quadratic);
         }
     }
 }

@@ -105,10 +105,10 @@ namespace TweakScale
             var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
             isFreeScale = configValue("freeScale", defaultValue: false);
             scaleFactors = configValue("scaleFactors", defaultValue: new[] { 0.625, 1.25, 2.5, 3.75, 5.0 });
-            massFactors = configValue("massFactors", defaultValue: new[] { 0, 0, 1.0 });
-            range.minValue = configValue("minScale", defaultValue: isFreeScale ? 0.5f : 0f);
-            range.maxValue = configValue("maxScale", defaultValue: scaleFactors.Length - 1f);
-            range.stepIncrement = configValue("stepIncrement", defaultValue: isFreeScale ? 0.01f : 1f);
+            massFactors = configValue("massFactors", defaultValue: new[] { 0.0, 0.0, 1.0 });
+            range.minValue = configValue("minScale", defaultValue: isFreeScale ? 0.5f : 0.0f);
+            range.maxValue = configValue("maxScale", defaultValue: scaleFactors.Length - 1.0f);
+            range.stepIncrement = configValue("stepIncrement", defaultValue: isFreeScale ? 0.01f : 1.0f);
 
             if (currentScale < 0f)
             {
@@ -119,6 +119,11 @@ namespace TweakScale
             {
                 updateByWidth(scalingFactor, false);
                 part.mass = (float)(basePart.mass * scalingFactor.absolute.cubic);
+            }
+
+            foreach (var updater in updaters)
+            {
+                updater.onStart(scalingFactor);
             }
         }
 
@@ -236,13 +241,13 @@ namespace TweakScale
                     updateBySurfaceArea(scalingFactor); // call this first, results are used by updateByWidth
                     updateByWidth(scalingFactor, true);
                     updateByRelativeVolume(scalingFactor);
+                    updateWindow(); // call this last
+
+                    currentScale = tweakScale;
                     foreach (var updater in updaters)
                     {
                         updater.postUpdate(scalingFactor);
                     }
-                    updateWindow(); // call this last
-
-                    currentScale = tweakScale;
                 }
                 else if (part.transform.GetChild(0).localScale != savedScale) // editor frequently nukes our OnStart resize some time later
                 {
