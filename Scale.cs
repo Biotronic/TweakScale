@@ -35,9 +35,9 @@ namespace TweakScale
         [KSPField(isPersistant = true)]
         public bool isFreeScale = false;
 
-        private double[] scaleFactors = { 0.625, 1.25, 2.5, 3.75, 5.0 };
+        private float[] scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5.0f };
 
-        private double[] massFactors = {0, 0, 1};
+        private float[] massFactors = { 0.0f, 0.0f, 1.0f };
 
         private Part basePart;
 
@@ -100,31 +100,25 @@ namespace TweakScale
             }
         }
 
-        private double getScaleFactor(double index)
-        {
-            return index;
-            /*if (isFreeScale)
-            {
-                return index;
-            }
-            else
-            {
-                return scaleFactors[(int)index];
-            }
-             * */
-        }
-
         private ScalingFactor scalingFactor
         {
             get
             {
-                return new ScalingFactor(getScaleFactor(tweakScale) / getScaleFactor(defaultScale), getScaleFactor(tweakScale) / getScaleFactor(currentScale));
+                return new ScalingFactor(tweakScale / defaultScale, tweakScale / currentScale);
             }
         }
 
-        private double clamp(double x, double min, double max)
+        private void SetupFromConfig(ScaleConfig config)
         {
-            return x < min ? min : x > max ? max : x;
+            var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
+
+            isFreeScale = config.isFreeScale;
+            scaleFactors = config.scaleFactors;
+            massFactors = config.massFactors;
+            range.minValue = config.minValue;
+            range.maxValue = config.maxValue;
+            range.stepIncrement = config.stepIncrement;
+            defaultScale = config.defaultScale;
         }
 
         public override void OnStart(StartState state)
@@ -134,21 +128,11 @@ namespace TweakScale
 
             updaters = TweakScaleUpdater.createUpdaters(part);
 
-            // Read all non-persistent config values. This needs to be done in case the part file has changed since last we checked (i.e. the game has been restarted and we loaded a ship), or if we copy a part.
-            var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
-            isFreeScale = configValue("freeScale", defaultValue: false);
-            scaleFactors = configValue("scaleFactors", defaultValue: new[] { 0.625, 1.25, 2.5, 3.75, 5.0 }).OrderBy(a=>a).ToArray();
-            massFactors = configValue("massFactors", defaultValue: new[] { 0.0, 0.0, 1.0 });
-            range.minValue = configValue("minScale", defaultValue: isFreeScale ? 0.5f : (float)scaleFactors.First());
-            range.maxValue = configValue("maxScale", defaultValue: isFreeScale ? 2.0f : (float)scaleFactors.Last());
-            range.stepIncrement = configValue("stepIncrement", defaultValue: 0.01f);
+            SetupFromConfig(new ScaleConfig(moduleNode));
 
             if (currentScale < 0f)
             {
-                print("GTS defaultScale == " + defaultScale.ToString());
-                var tmpScale = configValue("defaultScale", defaultValue: 1.0);
-                tmpScale = closest(tmpScale, scaleFactors);
-                tweakScale = currentScale = defaultScale = (float)clamp(tmpScale, range.minValue, range.maxValue);
+                tweakScale = currentScale = defaultScale;
             }
             else
             {
@@ -263,26 +247,11 @@ namespace TweakScale
             }
         }
 
-        private static double closest(double x, double[] values)
-        {
-            var minDistance = double.PositiveInfinity;
-            var result = double.NaN;
-            foreach (var value in values) {
-                var tmpDistance = Math.Abs(value - x);
-                if (tmpDistance < minDistance)
-                {
-                    result = value;
-                    minDistance = tmpDistance;
-                }
-            }
-            return result;
-        }
-
         public void Update()
         {
             if (!isFreeScale)
             {
-                tweakScale = (float)closest(tweakScale, scaleFactors);
+                tweakScale = (float)Tools.closest(tweakScale, scaleFactors);
             }
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
             {
