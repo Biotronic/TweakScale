@@ -102,7 +102,8 @@ namespace TweakScale
 
         private double getScaleFactor(double index)
         {
-            if (isFreeScale)
+            return index;
+            /*if (isFreeScale)
             {
                 return index;
             }
@@ -110,6 +111,7 @@ namespace TweakScale
             {
                 return scaleFactors[(int)index];
             }
+             * */
         }
 
         private ScalingFactor scalingFactor
@@ -137,14 +139,15 @@ namespace TweakScale
             isFreeScale = configValue("freeScale", defaultValue: false);
             scaleFactors = configValue("scaleFactors", defaultValue: new[] { 0.625, 1.25, 2.5, 3.75, 5.0 }).OrderBy(a=>a).ToArray();
             massFactors = configValue("massFactors", defaultValue: new[] { 0.0, 0.0, 1.0 });
-            range.minValue = configValue("minScale", defaultValue: isFreeScale ? 0.5f : 0.0f);
-            range.maxValue = configValue("maxScale", defaultValue: isFreeScale ? 2.0f : scaleFactors.Length - 1.0f);
-            range.stepIncrement = configValue("stepIncrement", defaultValue: isFreeScale ? 0.01f : 1.0f);
+            range.minValue = configValue("minScale", defaultValue: isFreeScale ? 0.5f : (float)scaleFactors.First());
+            range.maxValue = configValue("maxScale", defaultValue: isFreeScale ? 2.0f : (float)scaleFactors.Last());
+            range.stepIncrement = configValue("stepIncrement", defaultValue: 0.01f);
 
             if (currentScale < 0f)
             {
                 print("GTS defaultScale == " + defaultScale.ToString());
                 var tmpScale = configValue("defaultScale", defaultValue: 1.0);
+                tmpScale = closest(tmpScale, scaleFactors);
                 tweakScale = currentScale = defaultScale = (float)clamp(tmpScale, range.minValue, range.maxValue);
             }
             else
@@ -260,8 +263,27 @@ namespace TweakScale
             }
         }
 
+        private static double closest(double x, double[] values)
+        {
+            var minDistance = double.PositiveInfinity;
+            var result = double.NaN;
+            foreach (var value in values) {
+                var tmpDistance = Math.Abs(value - x);
+                if (tmpDistance < minDistance)
+                {
+                    result = value;
+                    minDistance = tmpDistance;
+                }
+            }
+            return result;
+        }
+
         public void Update()
         {
+            if (!isFreeScale)
+            {
+                tweakScale = (float)closest(tweakScale, scaleFactors);
+            }
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
             {
                 if (tweakScale != currentScale) // user has changed the scale tweakable
