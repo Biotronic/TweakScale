@@ -10,9 +10,14 @@ namespace TweakScale
         public struct FactorSet
         {
             double _linear;
-            double _quadratic;
-            double _cubic;
 
+            public double squareRoot
+            {
+                get
+                {
+                    return Math.Sqrt(_linear);
+                }
+            }
             public double linear
             {
                 get
@@ -24,22 +29,20 @@ namespace TweakScale
             {
                 get
                 {
-                    return _quadratic;
+                    return _linear * _linear;
                 }
             }
             public double cubic
             {
                 get
                 {
-                    return _cubic;
+                    return _linear * _linear * _linear;
                 }
             }
 
             public FactorSet(double factor)
             {
                 _linear = factor;
-                _quadratic = factor * factor;
-                _cubic = factor * factor * factor;
             }
         }
 

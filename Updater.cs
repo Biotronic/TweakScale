@@ -13,9 +13,27 @@ namespace TweakScale
         static TweakScaleUpdater()
         {
             // Initialize above array.
+            // Stock modules:
+            ctors["ModuleDeployableSolarPanel"] = a => new TweakScaleSolarPanelUpdater(a);
+            ctors["ModuleEngines"] = a => new TweakScaleEngineUpdater(a);
+            ctors["ModuleReactionWheel"] = a => new TweakScaleReactionWheelUpdater(a);
+
+            // Modular Fuel Tanks/Real Fuels:
             ctors["ModularFuelTanks.ModuleFuelTanks"] = a => new TweakScaleModularFuelTanks4_3Updater(a);
             ctors["RealFuels.ModuleFuelTanks"] = a => new TweakScaleRealFuelUpdater(a);
-            ctors["ModuleDeployableSolarPanel"] = a => new TweakScaleSolarPanelUpdater(a);
+
+            // KSP Interstellar stuff:
+            ctors["FNPlugin.AlcubierreDrive"] = a => new TweakScaleAlcubierreDriveUpdater(a);
+            ctors["FNPlugin.AntimatterStorageTank"] = a => new TweakScaleAntimatterStorageTankUpdater(a);
+            ctors["FNPlugin.AtmosphericIntake"] = a => new TweakScaleAtmosphericIntakeUpdater(a);
+            ctors["FNPlugin.ElectricEngineController"] = a => new TweakScaleElectricEngineControllerUpdater(a);
+            ctors["FNPlugin.FNGenerator"] = a => new TweakScaleFNGeneratorUpdater(a);
+            ctors["FNPlugin.FNNozzleController"] = a => new TweakScaleFNNozzleControllerUpdater(a);
+            ctors["FNPlugin.FNRadiator"] = a => new TweakScaleFNRadiatorUpdater(a);
+            ctors["FNPlugin.FNRadiator"] = a => new TweakScaleFNRadiatorUpdater(a);
+            ctors["FNPlugin.ISRUScoop"] = a => new TweakScaleISRUScoopUpdater(a);
+            ctors["FNPlugin.MicrowavePowerReceiver"] = a => new TweakScaleMicrowavePowerReceiverUpdater(a);
+            ctors["FNPlugin.ModuleSolarSail"] = a => new TweakScaleSolarSailUpdater(a);
         }
 
         protected PartModule _module;
@@ -46,82 +64,13 @@ namespace TweakScale
         }
 
         // Called on start. Use this for setting up non-persistent values.
-        abstract public void onStart(ScalingFactor factor);
+        public virtual void onStart(ScalingFactor factor) { }
 
         // Called before updating resources.
-        abstract public void preUpdate(ScalingFactor factor);
+        public virtual void preUpdate(ScalingFactor factor) { }
 
         // Called after updating resources.
-        abstract public void postUpdate(ScalingFactor factor);
-    }
-
-    // For new-style (>v4.3) Real Fuels and Modular Fuel Tanks.
-    class TweakScaleRealFuelUpdater : TweakScaleUpdater
-    {
-        public TweakScaleRealFuelUpdater(PartModule pm)
-            : base(pm)
-        {
-        }
-
-        RealFuels.ModuleFuelTanks module
-        {
-            get
-            {
-                return (RealFuels.ModuleFuelTanks)_module;
-            }
-        }
-
-        override public void preUpdate(ScalingFactor factor)
-        {
-            module.basemass = (float)(module.basemass * factor.relative.cubic);
-            module.basemassPV = (float)(module.basemassPV * factor.relative.cubic);
-            module.volume *= factor.relative.cubic;
-            module.UpdateMass();
-        }
-
-        override public void postUpdate(ScalingFactor factor)
-        {
-            module.UpdateMass();
-            module.UpdateTweakableMenu();
-        }
-
-        public override void onStart(ScalingFactor factor)
-        {
-        }
-    }
-
-    // For old-style Modular Fuel Tanks.
-    class TweakScaleModularFuelTanks4_3Updater : TweakScaleUpdater
-    {
-        public TweakScaleModularFuelTanks4_3Updater(PartModule pm)
-            : base(pm)
-        {
-        }
-
-        ModularFuelTanks.ModuleFuelTanks module
-        {
-            get
-            {
-                return (ModularFuelTanks.ModuleFuelTanks)_module;
-            }
-        }
-
-        override public void preUpdate(ScalingFactor factor)
-        {
-            module.basemass = (float)(module.basemass * factor.relative.cubic);
-            module.basemassPV = (float)(module.basemassPV * factor.relative.cubic);
-            module.volume *= factor.relative.cubic;
-            module.UpdateMass();
-        }
-
-        override public void postUpdate(ScalingFactor factor)
-        {
-            module.UpdateMass();
-        }
-
-        public override void onStart(ScalingFactor factor)
-        {
-        }
+        public virtual void postUpdate(ScalingFactor factor) { }
     }
 
     class TweakScaleSolarPanelUpdater : TweakScaleUpdater
@@ -139,19 +88,57 @@ namespace TweakScale
             }
         }
 
-        public override void preUpdate(ScalingFactor factor)
-        {
-        }
-
-        public override void postUpdate(ScalingFactor factor)
-        {
-        }
-
         public override void onStart(ScalingFactor factor)
         {
             module.chargeRate = (float)(module.chargeRate * factor.absolute.quadratic);
             module.flowRate = (float)(module.flowRate * factor.absolute.quadratic);
             module.panelMass = (float)(module.panelMass * factor.absolute.quadratic);
+        }
+    }
+
+    class TweakScaleReactionWheelUpdater : TweakScaleUpdater
+    {
+        public TweakScaleReactionWheelUpdater(PartModule pm)
+            : base(pm)
+        {
+        }
+
+        ModuleReactionWheel module
+        {
+            get
+            {
+                return (ModuleReactionWheel)_module;
+            }
+        }
+
+        public override void onStart(ScalingFactor factor)
+        {
+            module.PitchTorque = (float)(module.PitchTorque * factor.absolute.cubic);
+            module.YawTorque = (float)(module.YawTorque * factor.absolute.cubic);
+            module.RollTorque = (float)(module.RollTorque * factor.absolute.cubic);
+        }
+    }
+
+    class TweakScaleEngineUpdater : TweakScaleUpdater
+    {
+        public TweakScaleEngineUpdater(PartModule pm)
+            : base(pm)
+        {
+        }
+
+        ModuleEngines module
+        {
+            get
+            {
+                return (ModuleEngines)_module;
+            }
+        }
+
+        public override void onStart(ScalingFactor factor)
+        {
+            module.minThrust = (float)(module.minThrust * factor.absolute.quadratic);
+            module.maxThrust = (float)(module.maxThrust * factor.absolute.quadratic);
+            module.heatProduction = (float)(module.heatProduction * factor.absolute.squareRoot);
         }
     }
 }

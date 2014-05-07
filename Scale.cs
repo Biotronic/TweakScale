@@ -70,8 +70,15 @@ namespace TweakScale
                 return defaultValue;
             }
             string cfgValue = moduleNode.GetValue(name);
-
-            return (T)Convert.ChangeType(cfgValue, typeof(T));
+            try
+            {
+                return (T)Convert.ChangeType(cfgValue, typeof(T));
+            }
+            catch (InvalidCastException)
+            {
+                print("Failed to convert string value \"" + cfgValue + "\" to type " + typeof(T).Name);
+                return defaultValue;
+            }
         }
 
         private double getScaleFactor(double index)

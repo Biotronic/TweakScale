@@ -24,6 +24,28 @@ Solar panels!
 More control over mass!
     For hollow, structural parts, mass probably scales with the surface area rather than the volume.
 
+Engines!
+    Yup, engines can now be rescaled, and the result will be somewhat roughly right. You might possibly get better results by scaling engines down than up.
+
+Reaction Wheels!
+    Parts with reaction wheels will now become more powerful when scaled up, and less powerful when scaled down.
+
+KSP Interstellar parts!
+    Correctly scales the physical properties as well as power output, waste heat, microwave transmission, etc. Currently supported parts:
+    Solar Sails
+    Microwave Receivers
+    Atmospheric Scoops
+    Atmospheric Intakes
+    Heat Radiators
+    Alcubierre Drives
+    Engines (Not the Vista engine yet)
+    Antimatter Storage Tanks
+    Generators
+    Engines
+    Fusion Reactors
+    As one can see, fission reactors, antimatter reactors and antimatter initiated reactors are not yet supported.
+    
+
 
 Example MODULE declarations:
 

@@ -38,6 +38,10 @@
       <HintPath>E:\Games\Steam\steamapps\common\Kerbal Space Program\GameData\ModularFuelTanks\Plugins\modularFuelTanks.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="OpenResourceSystem_1_1_0">
+      <HintPath>..\KSPInterstellar\OpenResourceSystem\bin\Debug\OpenResourceSystem_1_1_0.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="RealFuels">
       <HintPath>..\ModularFuelSystem\RealFuels.dll</HintPath>
       <Private>False</Private>
@@ -52,8 +56,14 @@
       <HintPath>E:\Games\Steam\steamapps\common\Kerbal Space Program\KSP_Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="WarpPlugin">
+      <HintPath>..\KSPInterstellar\FNPlugin\obj\Debug\WarpPlugin.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="KSPI_Updaters.cs" />
+    <Compile Include="MFT_Updaters.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Scale.cs" />
     <Compile Include="ScalingFactor.cs" />
