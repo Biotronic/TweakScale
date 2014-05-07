@@ -16,6 +16,7 @@ namespace TweakScale
             // Stock modules:
             ctors["ModuleDeployableSolarPanel"] = a => new TweakScaleSolarPanelUpdater(a);
             ctors["ModuleEngines"] = a => new TweakScaleEngineUpdater(a);
+            ctors["ModuleEnginesFX"] = a => new TweakScaleEngineFXUpdater(a);
             ctors["ModuleReactionWheel"] = a => new TweakScaleReactionWheelUpdater(a);
 
             // Modular Fuel Tanks/Real Fuels:
@@ -131,6 +132,29 @@ namespace TweakScale
             get
             {
                 return (ModuleEngines)_module;
+            }
+        }
+
+        public override void onStart(ScalingFactor factor)
+        {
+            module.minThrust = (float)(module.minThrust * factor.absolute.quadratic);
+            module.maxThrust = (float)(module.maxThrust * factor.absolute.quadratic);
+            module.heatProduction = (float)(module.heatProduction * factor.absolute.squareRoot);
+        }
+    }
+
+    class TweakScaleEngineFXUpdater : TweakScaleUpdater
+    {
+        public TweakScaleEngineFXUpdater(PartModule pm)
+            : base(pm)
+        {
+        }
+
+        ModuleEnginesFX module
+        {
+            get
+            {
+                return (ModuleEnginesFX)_module;
             }
         }
 

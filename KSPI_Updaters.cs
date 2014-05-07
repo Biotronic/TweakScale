@@ -42,6 +42,11 @@ namespace TweakScale
             }
         }
 
+        public override void postUpdate(ScalingFactor factor)
+        {
+            module.collectorArea = (float)(module.collectorArea * factor.relative.quadratic);
+        }
+
         public override void onStart(ScalingFactor factor)
         {
             module.collectorArea = (float)(module.collectorArea * factor.absolute.quadratic);
@@ -103,6 +108,11 @@ namespace TweakScale
             {
                 return (FNPlugin.FNRadiator)_module;
             }
+        }
+
+        public override void postUpdate(ScalingFactor factor)
+        {
+            module.radiatorArea = (float)(module.radiatorArea * factor.relative.quadratic);
         }
 
         public override void onStart(ScalingFactor factor)
@@ -169,6 +179,11 @@ namespace TweakScale
             }
         }
 
+        public override void postUpdate(ScalingFactor factor)
+        {
+            module.chargeNeeded = (float)(module.chargeNeeded * factor.relative.quadratic);
+        }
+
         public override void onStart(ScalingFactor factor)
         {
             module.chargeNeeded = (float)(module.chargeNeeded * factor.absolute.quadratic);
@@ -188,6 +203,12 @@ namespace TweakScale
             {
                 return (FNPlugin.FNGenerator)_module;
             }
+        }
+
+        public override void postUpdate(ScalingFactor factor)
+        {
+            module.radius = (float)factor.absolute.linear;
+            module.maxThermalPower = (float)(module.maxThermalPower * factor.relative.cubic);
         }
 
         public override void onStart(ScalingFactor factor)
@@ -330,6 +351,16 @@ namespace TweakScale
             {
                 return (FNPlugin.FNFusionReactor)_module;
             }
+        }
+
+        public override void postUpdate(ScalingFactor factor)
+        {
+            module.radius = (float)factor.absolute.linear;
+            module.ThermalPower = (float)(module.ThermalPower * factor.relative.cubic);
+            module.resourceRate = (float)(module.resourceRate * factor.relative.cubic);
+            module.upgradedThermalPower = (float)(module.upgradedThermalPower * factor.relative.cubic);
+            module.upgradedResourceRate = (float)(module.upgradedResourceRate * factor.relative.cubic);
+            module.powerRequirements = (float)(module.powerRequirements * (module.isTokomak ? factor.relative.quadratic : factor.relative.cubic));
         }
 
         public override void onStart(ScalingFactor factor)

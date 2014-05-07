@@ -22,7 +22,8 @@ namespace TweakScale
     }
     public class TweakScale : PartModule
     {
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "Scale"), UI_FloatRange(minValue = 0f, maxValue = 4f, stepIncrement = 1f)]
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "Scale")]
+        [UI_FloatRange(minValue = 0f, maxValue = 4f, stepIncrement = 1f)]
         public float tweakScale = 1;
 
         [KSPField(isPersistant = true)]
@@ -81,6 +82,24 @@ namespace TweakScale
             }
         }
 
+        private T[] configValue<T>(string name, T[] defaultValue)
+        {
+            if (!moduleNode.HasValue(name))
+            {
+                return defaultValue;
+            }
+            string cfgValue = moduleNode.GetValue(name);
+            try
+            {
+                return cfgValue.Split(',').Select(a => (T)Convert.ChangeType(a, typeof(T))).ToArray();
+            }
+            catch (InvalidCastException)
+            {
+                print("Failed to convert string value \"" + cfgValue + "\" to type " + typeof(T[]).Name);
+                return defaultValue;
+            }
+        }
+
         private double getScaleFactor(double index)
         {
             if (isFreeScale)
@@ -101,6 +120,11 @@ namespace TweakScale
             }
         }
 
+        private double clamp(double x, double min, double max)
+        {
+            return x < min ? min : x > max ? max : x;
+        }
+
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
@@ -111,16 +135,17 @@ namespace TweakScale
             // Read all non-persistent config values. This needs to be done in case the part file has changed since last we checked (i.e. the game has been restarted and we loaded a ship), or if we copy a part.
             var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
             isFreeScale = configValue("freeScale", defaultValue: false);
-            scaleFactors = configValue("scaleFactors", defaultValue: new[] { 0.625, 1.25, 2.5, 3.75, 5.0 });
+            scaleFactors = configValue("scaleFactors", defaultValue: new[] { 0.625, 1.25, 2.5, 3.75, 5.0 }).OrderBy(a=>a).ToArray();
             massFactors = configValue("massFactors", defaultValue: new[] { 0.0, 0.0, 1.0 });
             range.minValue = configValue("minScale", defaultValue: isFreeScale ? 0.5f : 0.0f);
-            range.maxValue = configValue("maxScale", defaultValue: scaleFactors.Length - 1.0f);
+            range.maxValue = configValue("maxScale", defaultValue: isFreeScale ? 2.0f : scaleFactors.Length - 1.0f);
             range.stepIncrement = configValue("stepIncrement", defaultValue: isFreeScale ? 0.01f : 1.0f);
 
             if (currentScale < 0f)
             {
                 print("GTS defaultScale == " + defaultScale.ToString());
-                tweakScale = currentScale = defaultScale = configValue("defaultScale", defaultValue: 1);
+                var tmpScale = configValue("defaultScale", defaultValue: 1.0);
+                tweakScale = currentScale = defaultScale = (float)clamp(tmpScale, range.minValue, range.maxValue);
             }
             else
             {
