@@ -23,7 +23,7 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.surfaceArea = (float)(module.surfaceArea * factor.absolute.quadratic);
+            module.surfaceArea = module.surfaceArea * factor.absolute.quadratic;
         }
     }
 
@@ -44,12 +44,12 @@ namespace TweakScale
 
         public override void postUpdate(ScalingFactor factor)
         {
-            module.collectorArea = (float)(module.collectorArea * factor.relative.quadratic);
+            module.collectorArea = module.collectorArea * factor.relative.quadratic;
         }
 
         public override void onStart(ScalingFactor factor)
         {
-            module.collectorArea = (float)(module.collectorArea * factor.absolute.quadratic);
+            module.collectorArea = module.collectorArea * factor.absolute.quadratic;
         }
     }
 
@@ -70,7 +70,7 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.scoopair = (float)(module.scoopair * factor.absolute.quadratic);
+            module.scoopair = module.scoopair * factor.absolute.quadratic;
         }
     }
 
@@ -91,7 +91,7 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.area = (float)(module.area * factor.absolute.quadratic);
+            module.area = module.area * factor.absolute.quadratic;
         }
     }
 
@@ -112,12 +112,12 @@ namespace TweakScale
 
         public override void postUpdate(ScalingFactor factor)
         {
-            module.radiatorArea = (float)(module.radiatorArea * factor.relative.quadratic);
+            module.radiatorArea = module.radiatorArea * factor.relative.quadratic;
         }
 
         public override void onStart(ScalingFactor factor)
         {
-            module.radiatorArea = (float)(module.radiatorArea * factor.absolute.quadratic);
+            module.radiatorArea = module.radiatorArea * factor.absolute.quadratic;
         }
     }
 
@@ -138,8 +138,8 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.effectSize1 = (float)(module.effectSize1 * factor.absolute.linear);
-            module.effectSize2 = (float)(module.effectSize2 * factor.absolute.linear);
+            module.effectSize1 = module.effectSize1 * factor.absolute.linear;
+            module.effectSize2 = module.effectSize2 * factor.absolute.linear;
         }
     }
 
@@ -160,7 +160,7 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.radius = (float)factor.absolute.linear;
+            module.radius = factor.absolute.linear;
         }
     }
 
@@ -181,12 +181,12 @@ namespace TweakScale
 
         public override void postUpdate(ScalingFactor factor)
         {
-            module.chargeNeeded = (float)(module.chargeNeeded * factor.relative.quadratic);
+            module.chargeNeeded = module.chargeNeeded * factor.relative.quadratic;
         }
 
         public override void onStart(ScalingFactor factor)
         {
-            module.chargeNeeded = (float)(module.chargeNeeded * factor.absolute.quadratic);
+            module.chargeNeeded = module.chargeNeeded * factor.absolute.quadratic;
         }
     }
 
@@ -207,14 +207,14 @@ namespace TweakScale
 
         public override void postUpdate(ScalingFactor factor)
         {
-            module.radius = (float)factor.absolute.linear;
-            module.maxThermalPower = (float)(module.maxThermalPower * factor.relative.cubic);
+            module.radius = factor.absolute.linear;
+            module.maxThermalPower = module.maxThermalPower * factor.relative.cubic;
         }
 
         public override void onStart(ScalingFactor factor)
         {
-            module.radius = (float)factor.absolute.linear;
-            module.maxThermalPower = (float)(module.maxThermalPower * factor.absolute.cubic);
+            module.radius = factor.absolute.linear;
+            module.maxThermalPower = module.maxThermalPower * factor.absolute.cubic;
         }
     }
 
@@ -235,7 +235,7 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.maxPower = (float)(module.maxPower * Math.Pow(factor.absolute.linear, Math.Log(6) / Math.Log(2)));
+            module.maxPower = module.maxPower * (float)Math.Pow(factor.absolute.linear, Math.Log(6) / Math.Log(2));
         }
     }
     /*
@@ -256,10 +256,10 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.radius = (float)factor.absolute.linear;
+            module.radius = factor.absolute.linear;
             // This is not right, but it's an approximation. *sigh*
-            module.ThermalPower = (float)(module.ThermalPower * Math.Pow(factor.absolute.linear, Math.Log(80 / 3) / Math.Log(2)));
-            module.resourceRate = (float)(module.resourceRate * Math.Pow(factor.absolute.linear, 3.4099964449619539041298010520704));
+            module.ThermalPower = module.ThermalPower * (float)Math.Pow(factor.absolute.linear, Math.Log(80 / 3) / Math.Log(2));
+            module.resourceRate = module.resourceRate * (float)Math.Pow(factor.absolute.linear, 3.4099964449619539041298010520704);
         }
     }
     
@@ -280,10 +280,10 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.radius = (float)factor.absolute.linear;
+            module.radius = factor.absolute.linear;
             // This is not right, but it's an approximation. *sigh*
-            module.ThermalPower = (float)(module.ThermalPower * Math.Pow(factor.absolute.linear, Math.Log(80 / 3) / Math.Log(2)));
-            module.resourceRate = (float)(module.resourceRate * Math.Pow(factor.absolute.linear, 3.4099964449619539041298010520704));
+            module.ThermalPower = module.ThermalPower * (float)Math.Pow(factor.absolute.linear, Math.Log(80 / 3) / Math.Log(2));
+            module.resourceRate = module.resourceRate * (float)Math.Pow(factor.absolute.linear, 3.4099964449619539041298010520704);
         }
     }
     
@@ -304,10 +304,10 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.radius = (float)factor.absolute.linear;
+            module.radius = factor.absolute.linear;
             // This is not right, but it's an approximation. *sigh*
-            module.ThermalPower = (float)(module.ThermalPower * Math.Pow(factor.absolute.linear, Math.Log(80 / 3) / Math.Log(2)));
-            module.resourceRate = (float)(module.resourceRate * Math.Pow(factor.absolute.linear, 3.4099964449619539041298010520704));
+            module.ThermalPower = module.ThermalPower * (float)Math.Pow(factor.absolute.linear, Math.Log(80 / 3) / Math.Log(2)));
+            module.resourceRate = module.resourceRate * (float)Math.Pow(factor.absolute.linear, 3.4099964449619539041298010520704));
         }
     }
 
@@ -328,11 +328,11 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.radius = (float)factor.absolute.linear;
-            module.ThermalPower = (float)(module.ThermalPower * factor.absolute.cubic);
-            module.resourceRate = (float)(module.resourceRate * factor.absolute.cubic);
-            module.upgradedThermalPower = (float)(module.upgradedThermalPower * factor.absolute.cubic);
-            module.upgradedResourceRate = (float)(module.upgradedResourceRate * factor.absolute.cubic);
+            module.radius = factor.absolute.linear;
+            module.ThermalPower = module.ThermalPower * factor.absolute.cubic;
+            module.resourceRate = module.resourceRate * factor.absolute.cubic;
+            module.upgradedThermalPower = module.upgradedThermalPower * factor.absolute.cubic;
+            module.upgradedResourceRate = module.upgradedResourceRate * factor.absolute.cubic;
             // And then some magic for ReactorTemp and upgradedReactorTemp... factor^1.22? It's about right, but without math to back it up, I can't simply accept that.
         }
     }
@@ -355,22 +355,22 @@ namespace TweakScale
 
         public override void postUpdate(ScalingFactor factor)
         {
-            module.radius = (float)factor.absolute.linear;
-            module.ThermalPower = (float)(module.ThermalPower * factor.relative.cubic);
-            module.resourceRate = (float)(module.resourceRate * factor.relative.cubic);
-            module.upgradedThermalPower = (float)(module.upgradedThermalPower * factor.relative.cubic);
-            module.upgradedResourceRate = (float)(module.upgradedResourceRate * factor.relative.cubic);
-            module.powerRequirements = (float)(module.powerRequirements * (module.isTokomak ? factor.relative.quadratic : factor.relative.cubic));
+            module.radius = factor.absolute.linear;
+            module.ThermalPower = module.ThermalPower * factor.relative.cubic;
+            module.resourceRate = module.resourceRate * factor.relative.cubic;
+            module.upgradedThermalPower = module.upgradedThermalPower * factor.relative.cubic;
+            module.upgradedResourceRate = module.upgradedResourceRate * factor.relative.cubic;
+            module.powerRequirements = module.powerRequirements * (module.isTokomak ? factor.relative.quadratic : factor.relative.cubic);
         }
 
         public override void onStart(ScalingFactor factor)
         {
-            module.radius = (float)factor.absolute.linear;
-            module.ThermalPower = (float)(module.ThermalPower * factor.absolute.cubic);
-            module.resourceRate = (float)(module.resourceRate * factor.absolute.cubic);
-            module.upgradedThermalPower = (float)(module.upgradedThermalPower * factor.absolute.cubic);
-            module.upgradedResourceRate = (float)(module.upgradedResourceRate * factor.absolute.cubic);
-            module.powerRequirements = (float)(module.powerRequirements * (module.isTokomak ? factor.absolute.quadratic : factor.absolute.cubic));
+            module.radius = factor.absolute.linear;
+            module.ThermalPower = module.ThermalPower * factor.absolute.cubic;
+            module.resourceRate = module.resourceRate * factor.absolute.cubic;
+            module.upgradedThermalPower = module.upgradedThermalPower * factor.absolute.cubic;
+            module.upgradedResourceRate = module.upgradedResourceRate * factor.absolute.cubic;
+            module.powerRequirements = module.powerRequirements * (module.isTokomak ? factor.absolute.quadratic : factor.absolute.cubic);
         }
     }
 }

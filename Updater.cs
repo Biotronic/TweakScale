@@ -91,9 +91,9 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.chargeRate = (float)(module.chargeRate * factor.absolute.quadratic);
-            module.flowRate = (float)(module.flowRate * factor.absolute.quadratic);
-            module.panelMass = (float)(module.panelMass * factor.absolute.quadratic);
+            module.chargeRate = module.chargeRate * factor.absolute.quadratic;
+            module.flowRate = module.flowRate * factor.absolute.quadratic;
+            module.panelMass = module.panelMass * factor.absolute.quadratic;
         }
     }
 
@@ -114,9 +114,9 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.PitchTorque = (float)(module.PitchTorque * factor.absolute.cubic);
-            module.YawTorque = (float)(module.YawTorque * factor.absolute.cubic);
-            module.RollTorque = (float)(module.RollTorque * factor.absolute.cubic);
+            module.PitchTorque = module.PitchTorque * factor.absolute.cubic;
+            module.YawTorque = module.YawTorque * factor.absolute.cubic;
+            module.RollTorque = module.RollTorque * factor.absolute.cubic;
         }
     }
 
@@ -137,9 +137,9 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.minThrust = (float)(module.minThrust * factor.absolute.quadratic);
-            module.maxThrust = (float)(module.maxThrust * factor.absolute.quadratic);
-            module.heatProduction = (float)(module.heatProduction * factor.absolute.squareRoot);
+            module.minThrust = module.minThrust * factor.absolute.quadratic;
+            module.maxThrust = module.maxThrust * factor.absolute.quadratic;
+            module.heatProduction = module.heatProduction * factor.absolute.squareRoot;
         }
     }
 
@@ -160,9 +160,30 @@ namespace TweakScale
 
         public override void onStart(ScalingFactor factor)
         {
-            module.minThrust = (float)(module.minThrust * factor.absolute.quadratic);
-            module.maxThrust = (float)(module.maxThrust * factor.absolute.quadratic);
-            module.heatProduction = (float)(module.heatProduction * factor.absolute.squareRoot);
+            module.minThrust = module.minThrust * factor.absolute.quadratic;
+            module.maxThrust = module.maxThrust * factor.absolute.quadratic;
+            module.heatProduction = module.heatProduction * factor.absolute.squareRoot;
+        }
+    }
+
+    class TweakScaleRCSUpdater : TweakScaleUpdater
+    {
+        public TweakScaleRCSUpdater(PartModule pm)
+            : base(pm)
+        {
+        }
+
+        ModuleRCS module
+        {
+            get
+            {
+                return (ModuleRCS)_module;
+            }
+        }
+
+        public override void onStart(ScalingFactor factor)
+        {
+            module.thrusterPower = module.thrusterPower * factor.absolute.quadratic;
         }
     }
 }

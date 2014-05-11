@@ -57,49 +57,6 @@ namespace TweakScale
             }
         }
 
-        /// <summary>
-        /// Reads a value from the ConfigNode and magically converts it to the type you ask. Tested for float, boolean and double[]. Anything else is at your own risk.
-        /// </summary>
-        /// <typeparam name="T">The type to convert to. Usually inferred from <paramref name="defaultValue"/>.</typeparam>
-        /// <param name="name">Name of the ConfigNode's field</param>
-        /// <param name="defaultValue">The value to use when the ConfigNode doesn't contain what we want.</param>
-        /// <returns>The value in the ConfigNode, or <paramref name="defaultValue"/> if no decent value is found there.</returns>
-        private T configValue<T>(string name, T defaultValue)
-        {
-            if (!moduleNode.HasValue(name))
-            {
-                return defaultValue;
-            }
-            string cfgValue = moduleNode.GetValue(name);
-            try
-            {
-                return (T)Convert.ChangeType(cfgValue, typeof(T));
-            }
-            catch (InvalidCastException)
-            {
-                print("Failed to convert string value \"" + cfgValue + "\" to type " + typeof(T).Name);
-                return defaultValue;
-            }
-        }
-
-        private T[] configValue<T>(string name, T[] defaultValue)
-        {
-            if (!moduleNode.HasValue(name))
-            {
-                return defaultValue;
-            }
-            string cfgValue = moduleNode.GetValue(name);
-            try
-            {
-                return cfgValue.Split(',').Select(a => (T)Convert.ChangeType(a, typeof(T))).ToArray();
-            }
-            catch (InvalidCastException)
-            {
-                print("Failed to convert string value \"" + cfgValue + "\" to type " + typeof(T[]).Name);
-                return defaultValue;
-            }
-        }
-
         private ScalingFactor scalingFactor
         {
             get
@@ -137,7 +94,7 @@ namespace TweakScale
             else
             {
                 updateByWidth(scalingFactor, false);
-                part.mass = (float)(basePart.mass * scalingFactor.absolute.cubic);
+                part.mass = basePart.mass * scalingFactor.absolute.cubic;
             }
 
             foreach (var updater in updaters)
@@ -165,7 +122,7 @@ namespace TweakScale
 
         private void updateByWidth(ScalingFactor factor, bool moveParts)
         {
-            Vector3 rescaleVector = new Vector3((float)factor.absolute.linear, (float)factor.absolute.linear, (float)factor.absolute.linear);
+            Vector3 rescaleVector = Vector3.one * factor.absolute.linear;
 
             savedScale = part.transform.GetChild(0).localScale = Vector3.Scale(basePart.transform.GetChild(0).localScale, rescaleVector);
             part.transform.GetChild(0).hasChanged = true;
@@ -177,7 +134,7 @@ namespace TweakScale
                 moveNode(part.srfAttachNode, basePart.srfAttachNode, rescaleVector, moveParts);
             if (moveParts)
             {
-                Vector3 relativeVector = new Vector3((float)factor.relative.linear, (float)factor.relative.linear, (float)factor.relative.linear);
+                Vector3 relativeVector = Vector3.one * factor.relative.linear;
                 foreach (Part child in part.children)
                 {
                     if (child.srfAttachNode != null && child.srfAttachNode.attachedPart == part) // part is attached to us, but not on a node
@@ -193,16 +150,16 @@ namespace TweakScale
         private void updateBySurfaceArea(ScalingFactor factor) // values that change relative to the surface area (i.e. scale squared)
         {
             if (basePart.breakingForce == 22f) // not defined in the config, set to a reasonable default
-                part.breakingForce = (float)(32.0 * factor.relative.quadratic); // scale 1 = 50, scale 2 = 200, etc.
+                part.breakingForce = 32.0f * factor.relative.quadratic; // scale 1 = 50, scale 2 = 200, etc.
             else // is defined, scale it relative to new surface area
-                part.breakingForce = (float)(basePart.breakingForce * factor.absolute.quadratic);
+                part.breakingForce = basePart.breakingForce * factor.absolute.quadratic;
             if (part.breakingForce < 22f)
                 part.breakingForce = 22f;
 
             if (basePart.breakingTorque == 22f)
-                part.breakingTorque = (float)(32.0 * factor.relative.quadratic);
+                part.breakingTorque = 32.0f * factor.relative.quadratic;
             else
-                part.breakingTorque = (float)(basePart.breakingTorque * factor.absolute.quadratic);
+                part.breakingTorque = basePart.breakingTorque * factor.absolute.quadratic;
             if (part.breakingTorque < 22f)
                 part.breakingTorque = 22f;
         }
@@ -210,7 +167,7 @@ namespace TweakScale
         private void updateByRelativeVolume(ScalingFactor factor) // values that change relative to the volume (i.e. scale cubed)
         {
 
-            part.mass = (float)(part.mass * massFactors.Select((a, i) => Math.Pow(a * factor.relative.linear, i + 1)).Sum());
+            part.mass = part.mass * massFactors.Select((a, i) => (float)Math.Pow(a * factor.relative.linear, i + 1)).Sum();
 
             var newResourceValues = part.Resources.OfType<PartResource>().Select(a => new[] { a.amount * factor.relative.cubic, a.maxAmount * factor.relative.cubic }).ToArray();
 
@@ -251,7 +208,7 @@ namespace TweakScale
         {
             if (!isFreeScale)
             {
-                tweakScale = (float)Tools.closest(tweakScale, scaleFactors);
+                tweakScale = Tools.closest(tweakScale, scaleFactors);
             }
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
             {

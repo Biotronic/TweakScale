@@ -9,30 +9,30 @@ namespace TweakScale
     {
         public struct FactorSet
         {
-            double _linear;
+            float _linear;
 
-            public double squareRoot
+            public float squareRoot
             {
                 get
                 {
-                    return Math.Sqrt(_linear);
+                    return (float)Math.Sqrt(_linear);
                 }
             }
-            public double linear
+            public float linear
             {
                 get
                 {
                     return _linear;
                 }
             }
-            public double quadratic
+            public float quadratic
             {
                 get
                 {
                     return _linear * _linear;
                 }
             }
-            public double cubic
+            public float cubic
             {
                 get
                 {
@@ -40,7 +40,7 @@ namespace TweakScale
                 }
             }
 
-            public FactorSet(double factor)
+            public FactorSet(float factor)
             {
                 _linear = factor;
             }
@@ -64,7 +64,7 @@ namespace TweakScale
             }
         }
 
-        public ScalingFactor(double abs, double rel)
+        public ScalingFactor(float abs, float rel)
         {
             _absolute = new FactorSet(abs);
             _relative = new FactorSet(rel);

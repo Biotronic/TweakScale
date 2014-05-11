@@ -36,17 +36,14 @@ namespace TweakScale
         /// <returns>The value in the ConfigNode, or <paramref name="defaultValue"/> if no decent value is found there.</returns>
         public static T configValue<T>(ConfigNode config, string name, T defaultValue)
         {
-            MonoBehaviour.print("Reading " + name + " from config");
             if (!config.HasValue(name))
             {
-                MonoBehaviour.print("No " + name + " in config");
                 return defaultValue;
             }
             string cfgValue = config.GetValue(name);
             try
             {
                 var result = (T)Convert.ChangeType(cfgValue, typeof(T));
-                MonoBehaviour.print("Result value: " + result.ToString());
                 return result;
             }
             catch (InvalidCastException)

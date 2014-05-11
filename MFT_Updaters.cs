@@ -24,8 +24,8 @@ namespace TweakScale
 
         override public void preUpdate(ScalingFactor factor)
         {
-            module.basemass = (float)(module.basemass * factor.relative.cubic);
-            module.basemassPV = (float)(module.basemassPV * factor.relative.cubic);
+            module.basemass = module.basemass * factor.relative.cubic;
+            module.basemassPV = module.basemassPV * factor.relative.cubic;
             module.volume *= factor.relative.cubic;
             module.UpdateMass();
         }
@@ -55,8 +55,8 @@ namespace TweakScale
 
         override public void preUpdate(ScalingFactor factor)
         {
-            module.basemass = (float)(module.basemass * factor.relative.cubic);
-            module.basemassPV = (float)(module.basemassPV * factor.relative.cubic);
+            module.basemass = module.basemass * factor.relative.cubic;
+            module.basemassPV = module.basemassPV * factor.relative.cubic;
             module.volume *= factor.relative.cubic;
             module.UpdateMass();
         }

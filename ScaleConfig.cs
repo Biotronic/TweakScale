@@ -41,7 +41,7 @@ namespace TweakScale
 
                 var tmpScale = Tools.configValue(config, "defaultScale", defaultValue: source.defaultScale);
                 tmpScale = Tools.closest(tmpScale, scaleFactors);
-                defaultScale = (float)Tools.clamp(tmpScale, minValue, maxValue);
+                defaultScale = Tools.clamp(tmpScale, minValue, maxValue);
             }
         }
 
