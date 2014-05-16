@@ -27,7 +27,6 @@ namespace TweakScale
         [UI_FloatEdit(scene = UI_Scene.Editor, minValue = 0.625f, maxValue = 5, incrementLarge = 1.25f, incrementSmall = 0.125f, incrementSlide = 0.001f)]
         public float tweakScale = 1;
 
-
         [KSPField(isPersistant = true, guiActiveEditor = true, guiName = "Scale")]
         [UI_ChooseOption(scene = UI_Scene.Editor)]
         public int tweakName = 0;
@@ -118,6 +117,15 @@ namespace TweakScale
             foreach (var updater in updaters)
             {
                 updater.onStart(scalingFactor);
+            }
+        }
+
+        public override void OnLoad(ConfigNode node)
+        {
+            base.OnLoad(node);
+            if (tweakName == 0 && tweakScale != scaleFactors[tweakName])
+            {
+                tweakName = Tools.ClosestIndex(tweakScale, scaleFactors);
             }
         }
 
