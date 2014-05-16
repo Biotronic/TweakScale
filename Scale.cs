@@ -1,3 +1,4 @@
+using KSPAPIExtensions;
 /* GoodspeedTweakScale plugin (c) Copyright 2014 Gaius Goodspeed
 
 This software is made available by the author under the terms of the
@@ -22,9 +23,14 @@ namespace TweakScale
     }
     public class TweakScale : PartModule
     {
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "Scale")]
-        [UI_FloatRange(minValue = 0f, maxValue = 4f, stepIncrement = 1f)]
+        [KSPField(isPersistant = true, guiActiveEditor = true, guiName = "Scale", guiFormat = "S4", guiUnits = "m")]
+        [UI_FloatEdit(scene = UI_Scene.Editor, minValue = 0.625f, maxValue = 5, incrementLarge = 1.25f, incrementSmall = 0.125f, incrementSlide = 0.001f)]
         public float tweakScale = 1;
+
+
+        [KSPField(isPersistant = true, guiActiveEditor = true, guiName = "Scale")]
+        [UI_ChooseOption(scene = UI_Scene.Editor)]
+        public int tweakName = 0;
 
         [KSPField(isPersistant = true)]
         public float currentScale = -1;
@@ -35,7 +41,7 @@ namespace TweakScale
         [KSPField(isPersistant = true)]
         public bool isFreeScale = false;
 
-        private float[] scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5.0f };
+        private float[] scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
 
         private float[] massFactors = { 0.0f, 0.0f, 1.0f };
 
@@ -67,15 +73,26 @@ namespace TweakScale
 
         private void SetupFromConfig(ScaleConfig config)
         {
-            var range = (UI_FloatRange)this.Fields["tweakScale"].uiControlEditor;
-
             isFreeScale = config.isFreeScale;
-            scaleFactors = config.scaleFactors;
             massFactors = config.massFactors;
-            range.minValue = config.minValue;
-            range.maxValue = config.maxValue;
-            range.stepIncrement = config.stepIncrement;
             defaultScale = config.defaultScale;
+            if (isFreeScale)
+            {
+                var range = (UI_FloatEdit)this.Fields["tweakScale"].uiControlEditor;
+                range.minValue = config.minValue;
+                range.maxValue = config.maxValue;
+                range.incrementLarge = (float)Math.Round((range.maxValue - range.minValue) / 10, 2);
+                range.incrementSmall = (float)Math.Round(range.incrementLarge / 10, 2);
+            }
+            else
+            {
+                var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
+                scaleFactors = config.scaleFactors;
+                options.options = config.options;
+                tweakName = Tools.ClosestIndex(defaultScale, scaleFactors);
+            }
+            this.Fields["tweakScale"].guiActiveEditor = isFreeScale;
+            this.Fields["tweakName"].guiActiveEditor = !isFreeScale;
         }
 
         public override void OnStart(StartState state)
@@ -208,7 +225,7 @@ namespace TweakScale
         {
             if (!isFreeScale)
             {
-                tweakScale = Tools.closest(tweakScale, scaleFactors);
+                tweakScale = scaleFactors[tweakName];
             }
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
             {

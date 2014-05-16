@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -11,7 +12,7 @@ namespace TweakScale
             return x < min ? min : x > max ? max : x;
         }
 
-        public static float closest(float x, float[] values)
+        public static float Closest(float x, IEnumerable<float> values)
         {
             var minDistance = float.PositiveInfinity;
             var result = float.NaN;
@@ -27,6 +28,26 @@ namespace TweakScale
             return result;
         }
 
+        public static int ClosestIndex(float x, IEnumerable<float> values)
+        {
+            var minDistance = float.PositiveInfinity;
+            var best = float.NaN;
+            int result = 0;
+            int idx = 0;
+            foreach (var value in values)
+            {
+                var tmpDistance = Math.Abs(value - x);
+                if (tmpDistance < minDistance)
+                {
+                    best = value;
+                    result = idx;
+                    minDistance = tmpDistance;
+                }
+                idx++;
+            }
+            return result;
+        }
+
         /// <summary>
         /// Reads a value from the ConfigNode and magically converts it to the type you ask. Tested for float, boolean and double[]. Anything else is at your own risk.
         /// </summary>
@@ -34,7 +55,7 @@ namespace TweakScale
         /// <param name="name">Name of the ConfigNode's field</param>
         /// <param name="defaultValue">The value to use when the ConfigNode doesn't contain what we want.</param>
         /// <returns>The value in the ConfigNode, or <paramref name="defaultValue"/> if no decent value is found there.</returns>
-        public static T configValue<T>(ConfigNode config, string name, T defaultValue)
+        public static T ConfigValue<T>(ConfigNode config, string name, T defaultValue)
         {
             if (!config.HasValue(name))
             {

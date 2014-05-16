@@ -34,6 +34,9 @@
       <HintPath>E:\Games\Steam\steamapps\common\Kerbal Space Program\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="KSPAPIExtensions">
+      <HintPath>Gamedata\KSPAPIExtensions.dll</HintPath>
+    </Reference>
     <Reference Include="modularFuelTanks">
       <HintPath>E:\Games\Steam\steamapps\common\Kerbal Space Program\GameData\ModularFuelTanks\Plugins\modularFuelTanks.dll</HintPath>
       <Private>False</Private>
@@ -69,9 +72,13 @@
     <Compile Include="Scale.cs" />
     <Compile Include="ScaleConfig.cs" />
     <Compile Include="ScalingFactor.cs" />
+    <Compile Include="Tuple.cs" />
     <Compile Include="Updater.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy "$(TargetPath)" "$(ProjectDir)\Gamedata\TweakScale\plugins"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
