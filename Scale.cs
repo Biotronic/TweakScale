@@ -83,12 +83,13 @@ namespace TweakScale
                 range.maxValue = config.maxValue;
                 range.incrementLarge = (float)Math.Round((range.maxValue - range.minValue) / 10, 2);
                 range.incrementSmall = (float)Math.Round(range.incrementLarge / 10, 2);
+                this.Fields["tweakScale"].guiUnits = config.suffix;
             }
             else
             {
                 var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
                 scaleFactors = config.scaleFactors;
-                options.options = config.options;
+                options.options = config.scaleNames;
                 tweakName = Tools.ClosestIndex(defaultScale, scaleFactors);
             }
             this.Fields["tweakScale"].guiActiveEditor = isFreeScale;

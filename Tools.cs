@@ -74,7 +74,7 @@ namespace TweakScale
             }
         }
 
-        public static T[] configValue<T>(ConfigNode config, string name, T[] defaultValue)
+        public static T[] ConfigValue<T>(ConfigNode config, string name, T[] defaultValue)
         {
             if (!config.HasValue(name))
             {

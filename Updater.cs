@@ -18,6 +18,9 @@ namespace TweakScale
             ctors["ModuleEngines"] = a => new TweakScaleEngineUpdater(a);
             ctors["ModuleEnginesFX"] = a => new TweakScaleEngineFXUpdater(a);
             ctors["ModuleReactionWheel"] = a => new TweakScaleReactionWheelUpdater(a);
+            ctors["ModuleRCS"] = a => new TweakScaleRCSUpdater(a);
+            ctors["ModuleResourceIntake"] = a => new TweakScaleIntakeUpdater(a);
+            ctors["ModuleControlSurface"] = a => new TweakScaleControlSurfaceUpdater(a);
 
             // Modular Fuel Tanks/Real Fuels:
             ctors["ModularFuelTanks.ModuleFuelTanks"] = a => new TweakScaleModularFuelTanks4_3Updater(a);
@@ -184,6 +187,48 @@ namespace TweakScale
         public override void onStart(ScalingFactor factor)
         {
             module.thrusterPower = module.thrusterPower * factor.absolute.quadratic;
+        }
+    }
+
+    class TweakScaleControlSurfaceUpdater : TweakScaleUpdater
+    {
+        public TweakScaleControlSurfaceUpdater(PartModule pm)
+            : base(pm)
+        {
+        }
+
+        ModuleControlSurface module
+        {
+            get
+            {
+                return (ModuleControlSurface)_module;
+            }
+        }
+
+        public override void onStart(ScalingFactor factor)
+        {
+            module.ctrlSurfaceArea = module.ctrlSurfaceArea * factor.absolute.quadratic;
+        }
+    }
+
+    class TweakScaleIntakeUpdater : TweakScaleUpdater
+    {
+        public TweakScaleIntakeUpdater(PartModule pm)
+            : base(pm)
+        {
+        }
+
+        ModuleResourceIntake module
+        {
+            get
+            {
+                return (ModuleResourceIntake)_module;
+            }
+        }
+
+        public override void onStart(ScalingFactor factor)
+        {
+            module.area = module.area * factor.absolute.quadratic;
         }
     }
 }

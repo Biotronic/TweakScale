@@ -16,11 +16,12 @@ namespace TweakScale
 
         public bool isFreeScale = false;
         public float[] scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
-        public string[] options = { "62.5cm", "1.25m", "2.5m", "3.75m", "5m" };
+        public string[] scaleNames = { "62.5cm", "1.25m", "2.5m", "3.75m", "5m" };
         public float[] massFactors = { 0.0f, 0.0f, 1.0f };
         public float minValue = 0.625f;
         public float maxValue = 5.0f;
         public float defaultScale = 1.25f;
+        public string suffix = "m";
 
         private ScaleConfig()
         {
@@ -34,11 +35,12 @@ namespace TweakScale
                 var source = GetScaleConfig(type);
 
                 isFreeScale = Tools.ConfigValue(config, "freeScale", defaultValue: source.isFreeScale);
-                scaleFactors = Tools.configValue(config, "scaleFactors", defaultValue: source.scaleFactors);
-                massFactors = Tools.configValue(config, "massFactors", defaultValue: source.massFactors);
+                scaleFactors = Tools.ConfigValue(config, "scaleFactors", defaultValue: source.scaleFactors);
+                massFactors = Tools.ConfigValue(config, "massFactors", defaultValue: source.massFactors);
                 minValue = Tools.ConfigValue(config, "minScale", defaultValue: source.minValue);
                 maxValue = Tools.ConfigValue(config, "maxScale", defaultValue: source.maxValue);
-                options = Tools.configValue(config, "options", defaultValue: source.options);
+                scaleNames = Tools.ConfigValue(config, "scaleNames", defaultValue: source.scaleNames);
+                suffix = Tools.ConfigValue(config, "suffix", defaultValue: source.suffix);
 
                 var tmpScale = Tools.ConfigValue(config, "defaultScale", defaultValue: source.defaultScale);
                 tmpScale = Tools.Closest(tmpScale, scaleFactors);
