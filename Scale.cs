@@ -50,6 +50,8 @@ namespace TweakScale
 
         private TweakScaleUpdater[] updaters;
 
+        private bool oldFileVersion = false;
+
         /// <summary>
         /// The ConfigNode that belongs to this module.
         /// </summary>
@@ -103,10 +105,19 @@ namespace TweakScale
 
             SetupFromConfig(new ScaleConfig(moduleNode));
 
+            if (oldFileVersion)
+            {
+                tweakScale = currentScale = new[] { 0.625f, 1.25f, 2.5f, 3.75f, 5.0f }[(int)tweakScale];
+                tweakName = Tools.ClosestIndex(tweakScale, scaleFactors);
+            }
+
             if (currentScale < 0f)
             {
                 tweakScale = currentScale = defaultScale;
-                tweakName = Tools.ClosestIndex(defaultScale, scaleFactors);
+                if (!isFreeScale)
+                {
+                    tweakName = Tools.ClosestIndex(defaultScale, scaleFactors);
+                }
             }
             else
             {
@@ -122,11 +133,11 @@ namespace TweakScale
 
         public override void OnLoad(ConfigNode node)
         {
-            base.OnLoad(node);
-            if (tweakName == 0 && tweakScale != scaleFactors[tweakName])
+            if (!isFreeScale && tweakName == 0 && tweakScale != scaleFactors[tweakName])
             {
-                tweakName = Tools.ClosestIndex(tweakScale, scaleFactors);
+                oldFileVersion = true;
             }
+            base.OnLoad(node);
         }
 
         private void moveNode(AttachNode node, AttachNode baseNode, Vector3 rescaleVector, bool movePart)
