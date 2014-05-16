@@ -90,7 +90,6 @@ namespace TweakScale
                 var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
                 scaleFactors = config.scaleFactors;
                 options.options = config.scaleNames;
-                tweakName = Tools.ClosestIndex(defaultScale, scaleFactors);
             }
             this.Fields["tweakScale"].guiActiveEditor = isFreeScale;
             this.Fields["tweakName"].guiActiveEditor = !isFreeScale;
@@ -108,6 +107,7 @@ namespace TweakScale
             if (currentScale < 0f)
             {
                 tweakScale = currentScale = defaultScale;
+                tweakName = Tools.ClosestIndex(defaultScale, scaleFactors);
             }
             else
             {
