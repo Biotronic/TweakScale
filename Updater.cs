@@ -61,7 +61,6 @@ namespace TweakScale
             var name = module.GetType().FullName;
             if (ctors.ContainsKey(name))
             {
-                MonoBehaviour.print("Creating updater for " + name);
                 return ctors[name](module);
             }
             return null;
