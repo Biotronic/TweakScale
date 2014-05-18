@@ -72,8 +72,43 @@ namespace TweakScale
             }
         }
 
+
+        private float minSize
+        {
+            get
+            {
+                if (isFreeScale)
+                {
+                    var range = (UI_FloatEdit)this.Fields["tweakScale"].uiControlEditor;
+                    return range.minValue;
+                }
+                else
+                {
+                    return scaleFactors.Min();
+                }
+            }
+        }
+
+        private float maxSize
+        {
+            get
+            {
+                if (isFreeScale)
+                {
+                    var range = (UI_FloatEdit)this.Fields["tweakScale"].uiControlEditor;
+                    return range.maxValue;
+                }
+                else
+                {
+                    return scaleFactors.Max();
+                }
+            }
+        }
+
+
         private void SetupFromConfig(ScaleConfig config)
         {
+
             isFreeScale = config.isFreeScale;
             massFactors = config.massFactors;
             defaultScale = config.defaultScale;
@@ -96,9 +131,12 @@ namespace TweakScale
             this.Fields["tweakName"].guiActiveEditor = !isFreeScale;
         }
 
-        public override void OnStart(StartState state)
+        private void Setup()
         {
-            base.OnStart(state);
+            if (part.partInfo == null)
+            {
+                return;
+            }
             basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
 
             updaters = TweakScaleUpdater.createUpdaters(part);
@@ -131,6 +169,12 @@ namespace TweakScale
             }
         }
 
+        public override void OnStart(StartState state)
+        {
+            base.OnStart(state);
+            Setup();
+        }
+
         public override void OnLoad(ConfigNode node)
         {
             if (!isFreeScale && tweakName == 0 && tweakScale != scaleFactors[tweakName])
@@ -138,6 +182,7 @@ namespace TweakScale
                 oldFileVersion = true;
             }
             base.OnLoad(node);
+            Setup();
         }
 
         private void moveNode(AttachNode node, AttachNode baseNode, Vector3 rescaleVector, bool movePart)
@@ -151,7 +196,10 @@ namespace TweakScale
                 else
                     node.attachedPart.transform.Translate(node.position - oldPosition, part.transform);
             }
-            node.size = (int)(baseNode.size + tweakScale - defaultScale);
+
+
+
+            node.size = (int)(baseNode.size + (tweakScale - defaultScale) / (maxSize - minSize) * 5);
             if (node.size < 0) node.size = 0;
             node.breakingForce = part.breakingForce;
             node.breakingTorque = part.breakingTorque;

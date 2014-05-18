@@ -43,7 +43,10 @@ namespace TweakScale
                 suffix = Tools.ConfigValue(config, "suffix", defaultValue: source.suffix);
 
                 var tmpScale = Tools.ConfigValue(config, "defaultScale", defaultValue: source.defaultScale);
-                tmpScale = Tools.Closest(tmpScale, scaleFactors);
+                if (!isFreeScale)
+                {
+                    tmpScale = Tools.Closest(tmpScale, scaleFactors);
+                }
                 defaultScale = Tools.clamp(tmpScale, minValue, maxValue);
             }
         }
