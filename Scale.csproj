@@ -34,6 +34,9 @@
       <HintPath>E:\Games\Steam\steamapps\common\Kerbal Space Program\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>E:\Games\Steam\steamapps\common\Kerbal Space Program\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
     <Reference Include="KSPAPIExtensions">
       <HintPath>Gamedata\KSPAPIExtensions.dll</HintPath>
     </Reference>
@@ -57,7 +60,6 @@
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
       <HintPath>E:\Games\Steam\steamapps\common\Kerbal Space Program\KSP_Data\Managed\UnityEngine.dll</HintPath>
-      <Private>False</Private>
     </Reference>
     <Reference Include="WarpPlugin">
       <HintPath>..\KSPInterstellar\FNPlugin\obj\Debug\WarpPlugin.dll</HintPath>

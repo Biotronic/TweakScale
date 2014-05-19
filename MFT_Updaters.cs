@@ -22,7 +22,7 @@ namespace TweakScale
             }
         }
 
-        override public void preUpdate(ScalingFactor factor)
+        override public void OnPreUpdateScaling(ScalingFactor factor)
         {
             module.basemass = module.basemass * factor.relative.cubic;
             module.basemassPV = module.basemassPV * factor.relative.cubic;
@@ -30,7 +30,7 @@ namespace TweakScale
             module.UpdateMass();
         }
 
-        override public void postUpdate(ScalingFactor factor)
+        override public void OnPostUpdateScaling(ScalingFactor factor)
         {
             module.UpdateMass();
             module.UpdateTweakableMenu();
@@ -53,7 +53,7 @@ namespace TweakScale
             }
         }
 
-        override public void preUpdate(ScalingFactor factor)
+        override public void OnPreUpdateScaling(ScalingFactor factor)
         {
             module.basemass = module.basemass * factor.relative.cubic;
             module.basemassPV = module.basemassPV * factor.relative.cubic;
@@ -61,7 +61,7 @@ namespace TweakScale
             module.UpdateMass();
         }
 
-        override public void postUpdate(ScalingFactor factor)
+        override public void OnPostUpdateScaling(ScalingFactor factor)
         {
             module.UpdateMass();
         }
