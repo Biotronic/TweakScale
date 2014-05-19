@@ -40,6 +40,11 @@ namespace TweakScale
         [KSPField(isPersistant = true)]
         public bool isFreeScale = false;
 
+        [KSPField(isPersistant = true)]
+        public int version = 0;
+
+        private static int currentVersion = 1;
+
         private float[] scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
 
         private float[] massFactors = { 0.0f, 0.0f, 1.0f };
@@ -49,8 +54,6 @@ namespace TweakScale
         private Vector3 savedScale;
 
         private TweakScaleUpdater[] updaters;
-
-        private bool oldFileVersion = false;
 
         /// <summary>
         /// The ConfigNode that belongs to this module.
@@ -143,12 +146,6 @@ namespace TweakScale
 
             SetupFromConfig(new ScaleConfig(moduleNode));
 
-            if (oldFileVersion)
-            {
-                tweakScale = currentScale = new[] { 0.625f, 1.25f, 2.5f, 3.75f, 5.0f }[(int)tweakScale];
-                tweakName = Tools.ClosestIndex(tweakScale, scaleFactors);
-            }
-
             if (currentScale < 0f)
             {
                 tweakScale = currentScale = defaultScale;
@@ -177,12 +174,14 @@ namespace TweakScale
 
         public override void OnLoad(ConfigNode node)
         {
-            if (!isFreeScale && tweakName == 0 && tweakScale != scaleFactors[tweakName])
-            {
-                oldFileVersion = true;
-            }
             base.OnLoad(node);
             Setup();
+        }
+
+        public override void OnSave(ConfigNode node)
+        {
+            version = currentVersion;
+            base.OnSave(node);
         }
 
         private void moveNode(AttachNode node, AttachNode baseNode, Vector3 rescaleVector, bool movePart)
