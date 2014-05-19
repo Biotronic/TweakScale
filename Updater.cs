@@ -6,10 +6,22 @@ using UnityEngine;
 
 namespace TweakScale
 {
-    abstract class TweakScaleUpdater
+    public interface ITweakScaleUpdatable
+    {
+        // Called by OnLoad.
+        void OnLoadScaling(ScalingFactor factor);
+        // Called by OnStart.
+        void OnStartScaling(ScalingFactor factor);
+        // Called before updating resources.
+        void OnPreUpdateScaling(ScalingFactor factor);
+        // Called after updating resources.
+        void OnPostUpdateScaling(ScalingFactor factor);
+    }
+
+    public abstract class TweakScaleUpdater : ITweakScaleUpdatable
     {
         // Every kind of updater is registered here, and the correct kind of updater is created for each PartModule.
-        static Dictionary<string, Func<PartModule, TweakScaleUpdater>> ctors = new Dictionary<string, Func<PartModule, TweakScaleUpdater>>();
+        static Dictionary<string, Func<PartModule, ITweakScaleUpdatable>> ctors = new Dictionary<string, Func<PartModule, ITweakScaleUpdatable>>();
         static TweakScaleUpdater()
         {
             // Initialize above array.
@@ -51,13 +63,17 @@ namespace TweakScale
         }
 
         // Creates an updater for each module attached to a part.
-        public static TweakScaleUpdater[] createUpdaters(Part part)
+        public static ITweakScaleUpdatable[] createUpdaters(Part part)
         {
             return part.Modules.Cast<PartModule>().Select(createUpdater).Where(a => (object)a != null).ToArray();
         }
 
-        private static TweakScaleUpdater createUpdater(PartModule module)
+        private static ITweakScaleUpdatable createUpdater(PartModule module)
         {
+            if (module is ITweakScaleUpdatable)
+            {
+                return module as ITweakScaleUpdatable;
+            }
             var name = module.GetType().FullName;
             if (ctors.ContainsKey(name))
             {
@@ -66,14 +82,10 @@ namespace TweakScale
             return null;
         }
 
-        // Called on start. Use this for setting up non-persistent values.
-        public virtual void onStart(ScalingFactor factor) { }
-
-        // Called before updating resources.
-        public virtual void preUpdate(ScalingFactor factor) { }
-
-        // Called after updating resources.
-        public virtual void postUpdate(ScalingFactor factor) { }
+        public virtual void OnLoadScaling(ScalingFactor factor) { }
+        public virtual void OnStartScaling(ScalingFactor factor) { }
+        public virtual void OnPreUpdateScaling(ScalingFactor factor) { }
+        public virtual void OnPostUpdateScaling(ScalingFactor factor) { }
     }
 
     class TweakScaleSolarPanelUpdater : TweakScaleUpdater
@@ -91,7 +103,7 @@ namespace TweakScale
             }
         }
 
-        public override void onStart(ScalingFactor factor)
+        public override void OnStartScaling(ScalingFactor factor)
         {
             module.chargeRate = module.chargeRate * factor.absolute.quadratic;
             module.flowRate = module.flowRate * factor.absolute.quadratic;
@@ -114,7 +126,7 @@ namespace TweakScale
             }
         }
 
-        public override void onStart(ScalingFactor factor)
+        public override void OnStartScaling(ScalingFactor factor)
         {
             module.PitchTorque = module.PitchTorque * factor.absolute.cubic;
             module.YawTorque = module.YawTorque * factor.absolute.cubic;
@@ -137,7 +149,7 @@ namespace TweakScale
             }
         }
 
-        public override void onStart(ScalingFactor factor)
+        public override void OnStartScaling(ScalingFactor factor)
         {
             module.minThrust = module.minThrust * factor.absolute.quadratic;
             module.maxThrust = module.maxThrust * factor.absolute.quadratic;
@@ -160,7 +172,7 @@ namespace TweakScale
             }
         }
 
-        public override void onStart(ScalingFactor factor)
+        public override void OnStartScaling(ScalingFactor factor)
         {
             module.minThrust = module.minThrust * factor.absolute.quadratic;
             module.maxThrust = module.maxThrust * factor.absolute.quadratic;
@@ -183,7 +195,7 @@ namespace TweakScale
             }
         }
 
-        public override void onStart(ScalingFactor factor)
+        public override void OnStartScaling(ScalingFactor factor)
         {
             module.thrusterPower = module.thrusterPower * factor.absolute.quadratic;
         }
@@ -204,7 +216,7 @@ namespace TweakScale
             }
         }
 
-        public override void onStart(ScalingFactor factor)
+        public override void OnStartScaling(ScalingFactor factor)
         {
             module.ctrlSurfaceArea = module.ctrlSurfaceArea * factor.absolute.quadratic;
         }
@@ -225,7 +237,7 @@ namespace TweakScale
             }
         }
 
-        public override void onStart(ScalingFactor factor)
+        public override void OnStartScaling(ScalingFactor factor)
         {
             module.area = module.area * factor.absolute.quadratic;
         }

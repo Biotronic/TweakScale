@@ -21,6 +21,7 @@ namespace TweakScale
     public class GoodspeedTweakScale : TweakScale
     {
     }
+
     public class TweakScale : PartModule
     {
         [KSPField(isPersistant = true, guiActiveEditor = true, guiName = "Scale", guiFormat = "S4", guiUnits = "m")]
@@ -48,7 +49,7 @@ namespace TweakScale
 
         private Vector3 savedScale;
 
-        private TweakScaleUpdater[] updaters;
+        private ITweakScaleUpdatable[] updaters;
 
         private bool oldFileVersion = false;
 
@@ -165,7 +166,7 @@ namespace TweakScale
 
             foreach (var updater in updaters)
             {
-                updater.onStart(scalingFactor);
+                updater.OnStartScaling(scalingFactor);
             }
         }
 
@@ -301,7 +302,7 @@ namespace TweakScale
                 {
                     foreach (var updater in updaters)
                     {
-                        updater.preUpdate(scalingFactor);
+                        updater.OnPreUpdateScaling(scalingFactor);
                     }
                     updateBySurfaceArea(scalingFactor); // call this first, results are used by updateByWidth
                     updateByWidth(scalingFactor, true);
@@ -311,7 +312,7 @@ namespace TweakScale
                     currentScale = tweakScale;
                     foreach (var updater in updaters)
                     {
-                        updater.postUpdate(scalingFactor);
+                        updater.OnPostUpdateScaling(scalingFactor);
                     }
                 }
                 else if (part.transform.GetChild(0).localScale != savedScale) // editor frequently nukes our OnStart resize some time later
