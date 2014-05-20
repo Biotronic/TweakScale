@@ -20,6 +20,17 @@ namespace TweakScale
 {
     public class GoodspeedTweakScale : TweakScale
     {
+        private bool updated = false;
+
+        protected override void Setup()
+        {
+            base.Setup();
+            if (!updated)
+            {
+                tweakName = (int)tweakScale;
+                tweakScale = scaleFactors[tweakName];
+            }
+        }
     }
 
     public class TweakScale : PartModule
@@ -46,7 +57,7 @@ namespace TweakScale
 
         private static int currentVersion = 1;
 
-        private float[] scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
+        protected float[] scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
 
         private float[] massFactors = { 0.0f, 0.0f, 1.0f };
 
@@ -135,7 +146,7 @@ namespace TweakScale
             this.Fields["tweakName"].guiActiveEditor = !isFreeScale;
         }
 
-        private void Setup()
+        protected virtual void Setup()
         {
             if (part.partInfo == null)
             {
