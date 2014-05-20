@@ -22,18 +22,21 @@ namespace TweakScale
             }
         }
 
-        override public void OnPreUpdateScaling(ScalingFactor factor)
+        override public void OnRescale(ScalingFactor factor)
         {
-            module.basemass = module.basemass * factor.relative.cubic;
-            module.basemassPV = module.basemassPV * factor.relative.cubic;
-            module.volume *= factor.relative.cubic;
-            module.UpdateMass();
-        }
-
-        override public void OnPostUpdateScaling(ScalingFactor factor)
-        {
-            module.UpdateMass();
-            module.UpdateTweakableMenu();
+            var baseModule = GetBaseModule<RealFuels.ModuleFuelTanks>();
+            module.basemass = baseModule.basemass * factor.absolute.cubic;
+            module.basemassPV = baseModule.basemassPV * factor.absolute.cubic;
+            module.volume = baseModule.volume * factor.absolute.cubic;
+            try
+            {
+                module.UpdateMass();
+            }
+            catch (Exception)
+            {
+                // Just silently ignore this one...
+                // I have a reason: this is the only module that seems to misbehave when scaled too early.
+            }
         }
     }
 
@@ -53,17 +56,21 @@ namespace TweakScale
             }
         }
 
-        override public void OnPreUpdateScaling(ScalingFactor factor)
+        override public void OnRescale(ScalingFactor factor)
         {
-            module.basemass = module.basemass * factor.relative.cubic;
-            module.basemassPV = module.basemassPV * factor.relative.cubic;
-            module.volume *= factor.relative.cubic;
-            module.UpdateMass();
-        }
-
-        override public void OnPostUpdateScaling(ScalingFactor factor)
-        {
-            module.UpdateMass();
+            var baseModule = GetBaseModule<ModularFuelTanks.ModuleFuelTanks>();
+            module.basemass = baseModule.basemass * factor.absolute.cubic;
+            module.basemassPV = baseModule.basemassPV * factor.absolute.cubic;
+            module.volume = baseModule.volume * factor.absolute.cubic;
+            try
+            {
+                module.UpdateMass();
+            }
+            catch (Exception)
+            {
+                // Just silently ignore this one...
+                // I have a reason: this is the only module that seems to misbehave when scaled too early.
+            }
         }
     }
 }

@@ -39,7 +39,7 @@ namespace TweakScale
         [UI_FloatEdit(scene = UI_Scene.Editor, minValue = 0.625f, maxValue = 5, incrementLarge = 1.25f, incrementSmall = 0.125f, incrementSlide = 0.001f)]
         public float tweakScale = 1;
 
-        [KSPField(isPersistant = true, guiActiveEditor = true, guiName = "Scale")]
+        [KSPField(isPersistant = false, guiActiveEditor = true, guiName = "Scale")]
         [UI_ChooseOption(scene = UI_Scene.Editor)]
         public int tweakName = 0;
 
@@ -65,7 +65,7 @@ namespace TweakScale
 
         private Vector3 savedScale;
 
-        private ITweakScaleUpdatable[] updaters;
+        private IEnumerable<IRescalable> updaters;
 
         /// <summary>
         /// The ConfigNode that belongs to this module.
@@ -174,7 +174,7 @@ namespace TweakScale
 
             foreach (var updater in updaters)
             {
-                updater.OnStartScaling(scalingFactor);
+                updater.OnRescale(scalingFactor);
             }
         }
 
@@ -230,7 +230,7 @@ namespace TweakScale
                 moveNode(part.srfAttachNode, basePart.srfAttachNode, rescaleVector, moveParts);
             if (moveParts)
             {
-                Vector3 relativeVector = Vector3.one * factor.relative.linear;
+                Vector3 relativeVector = Vector3.one * factor.absolute.linear;
                 foreach (Part child in part.children)
                 {
                     if (child.srfAttachNode != null && child.srfAttachNode.attachedPart == part) // part is attached to us, but not on a node
@@ -246,14 +246,14 @@ namespace TweakScale
         private void updateBySurfaceArea(ScalingFactor factor) // values that change relative to the surface area (i.e. scale squared)
         {
             if (basePart.breakingForce == 22f) // not defined in the config, set to a reasonable default
-                part.breakingForce = 32.0f * factor.relative.quadratic; // scale 1 = 50, scale 2 = 200, etc.
+                part.breakingForce = 32.0f * factor.absolute.quadratic; // scale 1 = 50, scale 2 = 200, etc.
             else // is defined, scale it relative to new surface area
                 part.breakingForce = basePart.breakingForce * factor.absolute.quadratic;
             if (part.breakingForce < 22f)
                 part.breakingForce = 22f;
 
             if (basePart.breakingTorque == 22f)
-                part.breakingTorque = 32.0f * factor.relative.quadratic;
+                part.breakingTorque = 32.0f * factor.absolute.quadratic;
             else
                 part.breakingTorque = basePart.breakingTorque * factor.absolute.quadratic;
             if (part.breakingTorque < 22f)
@@ -310,10 +310,6 @@ namespace TweakScale
             {
                 if (tweakScale != currentScale) // user has changed the scale tweakable
                 {
-                    foreach (var updater in updaters)
-                    {
-                        updater.OnPreUpdateScaling(scalingFactor);
-                    }
                     updateBySurfaceArea(scalingFactor); // call this first, results are used by updateByWidth
                     updateByWidth(scalingFactor, true);
                     updateByRelativeVolume(scalingFactor);
@@ -322,7 +318,7 @@ namespace TweakScale
                     currentScale = tweakScale;
                     foreach (var updater in updaters)
                     {
-                        updater.OnPostUpdateScaling(scalingFactor);
+                        updater.OnRescale(scalingFactor);
                     }
                 }
                 else if (part.transform.GetChild(0).localScale != savedScale) // editor frequently nukes our OnStart resize some time later
