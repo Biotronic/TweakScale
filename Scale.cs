@@ -20,6 +20,17 @@ namespace TweakScale
 {
     public class GoodspeedTweakScale : TweakScale
     {
+        private bool updated = false;
+
+        protected override void Setup()
+        {
+            base.Setup();
+            if (!updated)
+            {
+                tweakName = (int)tweakScale;
+                tweakScale = scaleFactors[tweakName];
+            }
+        }
     }
 
     public class TweakScale : PartModule
@@ -28,7 +39,7 @@ namespace TweakScale
         [UI_FloatEdit(scene = UI_Scene.Editor, minValue = 0.625f, maxValue = 5, incrementLarge = 1.25f, incrementSmall = 0.125f, incrementSlide = 0.001f)]
         public float tweakScale = 1;
 
-        [KSPField(isPersistant = true, guiActiveEditor = true, guiName = "Scale")]
+        [KSPField(isPersistant = false, guiActiveEditor = true, guiName = "Scale")]
         [UI_ChooseOption(scene = UI_Scene.Editor)]
         public int tweakName = 0;
 
@@ -46,7 +57,7 @@ namespace TweakScale
 
         private static int currentVersion = 1;
 
-        private float[] scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
+        protected float[] scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
 
         private float[] massFactors = { 0.0f, 0.0f, 1.0f };
 
@@ -54,7 +65,8 @@ namespace TweakScale
 
         private Vector3 savedScale;
 
-        private ITweakScaleUpdatable[] updaters;
+        //private IRescalable[] updaters;
+        private IRescalable updater;
 
         /// <summary>
         /// The ConfigNode that belongs to this module.
@@ -135,7 +147,7 @@ namespace TweakScale
             this.Fields["tweakName"].guiActiveEditor = !isFreeScale;
         }
 
-        private void Setup()
+        protected virtual void Setup()
         {
             if (part.partInfo == null)
             {
@@ -143,7 +155,8 @@ namespace TweakScale
             }
             basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
 
-            updaters = TweakScaleUpdater.createUpdaters(part);
+            //updaters = TweakScaleUpdater.createUpdaters(part);
+            updater = new TSGenericUpdater(part);
 
             SetupFromConfig(new ScaleConfig(moduleNode));
 
@@ -161,9 +174,9 @@ namespace TweakScale
                 part.mass = basePart.mass * scalingFactor.absolute.cubic;
             }
 
-            foreach (var updater in updaters)
+            //foreach (var updater in updaters)
             {
-                updater.OnStartScaling(scalingFactor);
+                updater.OnRescale(scalingFactor);
             }
         }
 
@@ -299,19 +312,15 @@ namespace TweakScale
             {
                 if (tweakScale != currentScale) // user has changed the scale tweakable
                 {
-                    foreach (var updater in updaters)
-                    {
-                        updater.OnPreUpdateScaling(scalingFactor);
-                    }
                     updateBySurfaceArea(scalingFactor); // call this first, results are used by updateByWidth
                     updateByWidth(scalingFactor, true);
                     updateByRelativeVolume(scalingFactor);
                     updateWindow(); // call this last
 
                     currentScale = tweakScale;
-                    foreach (var updater in updaters)
+                    //foreach (var updater in updaters)
                     {
-                        updater.OnPostUpdateScaling(scalingFactor);
+                        updater.OnRescale(scalingFactor);
                     }
                 }
                 else if (part.transform.GetChild(0).localScale != savedScale) // editor frequently nukes our OnStart resize some time later

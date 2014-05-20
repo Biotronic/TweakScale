@@ -1,27 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using UnityEngine;
 
 namespace TweakScale
 {
-    public interface ITweakScaleUpdatable
+    public interface IRescalable
     {
-        // Called by OnLoad.
-        void OnLoadScaling(ScalingFactor factor);
-        // Called by OnStart.
-        void OnStartScaling(ScalingFactor factor);
-        // Called before updating resources.
-        void OnPreUpdateScaling(ScalingFactor factor);
-        // Called after updating resources.
-        void OnPostUpdateScaling(ScalingFactor factor);
+        void OnRescale(ScalingFactor factor);
     }
 
-    public abstract class TweakScaleUpdater : ITweakScaleUpdatable
+    public abstract class TweakScaleUpdater : IRescalable
     {
         // Every kind of updater is registered here, and the correct kind of updater is created for each PartModule.
-        static Dictionary<string, Func<PartModule, ITweakScaleUpdatable>> ctors = new Dictionary<string, Func<PartModule, ITweakScaleUpdatable>>();
+        static Dictionary<string, Func<PartModule, IRescalable>> ctors = new Dictionary<string, Func<PartModule, IRescalable>>();
         static TweakScaleUpdater()
         {
             // Initialize above array.
@@ -54,6 +48,27 @@ namespace TweakScale
 
         protected PartModule _module;
 
+        protected Part Part
+        {
+            get
+            {
+                return _module.part;
+            }
+        }
+
+        protected Part BasePart
+        {
+            get
+            {
+                return PartLoader.getPartInfoByName(Part.partInfo.name).partPrefab;
+            }
+        }
+
+        protected T GetBaseModule<T>()
+        {
+            return BasePart.Modules.OfType<T>().First();
+        }
+
         private TweakScaleUpdater()
         { }
 
@@ -63,16 +78,16 @@ namespace TweakScale
         }
 
         // Creates an updater for each module attached to a part.
-        public static ITweakScaleUpdatable[] createUpdaters(Part part)
+        public static IRescalable[] createUpdaters(Part part)
         {
             return part.Modules.Cast<PartModule>().Select(createUpdater).Where(a => (object)a != null).ToArray();
         }
 
-        private static ITweakScaleUpdatable createUpdater(PartModule module)
+        private static IRescalable createUpdater(PartModule module)
         {
-            if (module is ITweakScaleUpdatable)
+            if (module is IRescalable)
             {
-                return module as ITweakScaleUpdatable;
+                return module as IRescalable;
             }
             var name = module.GetType().FullName;
             if (ctors.ContainsKey(name))
@@ -82,10 +97,7 @@ namespace TweakScale
             return null;
         }
 
-        public virtual void OnLoadScaling(ScalingFactor factor) { }
-        public virtual void OnStartScaling(ScalingFactor factor) { }
-        public virtual void OnPreUpdateScaling(ScalingFactor factor) { }
-        public virtual void OnPostUpdateScaling(ScalingFactor factor) { }
+        public abstract void OnRescale(ScalingFactor factor);
     }
 
     class TweakScaleSolarPanelUpdater : TweakScaleUpdater
@@ -103,11 +115,12 @@ namespace TweakScale
             }
         }
 
-        public override void OnStartScaling(ScalingFactor factor)
+        public override void OnRescale(ScalingFactor factor)
         {
-            module.chargeRate = module.chargeRate * factor.absolute.quadratic;
-            module.flowRate = module.flowRate * factor.absolute.quadratic;
-            module.panelMass = module.panelMass * factor.absolute.quadratic;
+            var baseModule = GetBaseModule<ModuleDeployableSolarPanel>();
+            module.chargeRate = baseModule.chargeRate * factor.absolute.quadratic;
+            module.flowRate = baseModule.flowRate * factor.absolute.quadratic;
+            module.panelMass = baseModule.panelMass * factor.absolute.quadratic;
         }
     }
 
@@ -126,11 +139,12 @@ namespace TweakScale
             }
         }
 
-        public override void OnStartScaling(ScalingFactor factor)
+        public override void OnRescale(ScalingFactor factor)
         {
-            module.PitchTorque = module.PitchTorque * factor.absolute.cubic;
-            module.YawTorque = module.YawTorque * factor.absolute.cubic;
-            module.RollTorque = module.RollTorque * factor.absolute.cubic;
+            var baseModule = GetBaseModule<ModuleReactionWheel>();
+            module.PitchTorque = baseModule.PitchTorque * factor.absolute.cubic;
+            module.YawTorque = baseModule.YawTorque * factor.absolute.cubic;
+            module.RollTorque = baseModule.RollTorque * factor.absolute.cubic;
         }
     }
 
@@ -149,11 +163,12 @@ namespace TweakScale
             }
         }
 
-        public override void OnStartScaling(ScalingFactor factor)
+        public override void OnRescale(ScalingFactor factor)
         {
-            module.minThrust = module.minThrust * factor.absolute.quadratic;
-            module.maxThrust = module.maxThrust * factor.absolute.quadratic;
-            module.heatProduction = module.heatProduction * factor.absolute.squareRoot;
+            var baseModule = GetBaseModule<ModuleEngines>();
+            module.minThrust = baseModule.minThrust * factor.absolute.quadratic;
+            module.maxThrust = baseModule.maxThrust * factor.absolute.quadratic;
+            module.heatProduction = baseModule.heatProduction * factor.absolute.squareRoot;
         }
     }
 
@@ -172,11 +187,12 @@ namespace TweakScale
             }
         }
 
-        public override void OnStartScaling(ScalingFactor factor)
+        public override void OnRescale(ScalingFactor factor)
         {
-            module.minThrust = module.minThrust * factor.absolute.quadratic;
-            module.maxThrust = module.maxThrust * factor.absolute.quadratic;
-            module.heatProduction = module.heatProduction * factor.absolute.squareRoot;
+            var baseModule = GetBaseModule<ModuleEnginesFX>();
+            module.minThrust = baseModule.minThrust * factor.absolute.quadratic;
+            module.maxThrust = baseModule.maxThrust * factor.absolute.quadratic;
+            module.heatProduction = baseModule.heatProduction * factor.absolute.squareRoot;
         }
     }
 
@@ -195,9 +211,10 @@ namespace TweakScale
             }
         }
 
-        public override void OnStartScaling(ScalingFactor factor)
+        public override void OnRescale(ScalingFactor factor)
         {
-            module.thrusterPower = module.thrusterPower * factor.absolute.quadratic;
+            var baseModule = GetBaseModule<ModuleRCS>();
+            module.thrusterPower = baseModule.thrusterPower * factor.absolute.quadratic;
         }
     }
 
@@ -216,9 +233,10 @@ namespace TweakScale
             }
         }
 
-        public override void OnStartScaling(ScalingFactor factor)
+        public override void OnRescale(ScalingFactor factor)
         {
-            module.ctrlSurfaceArea = module.ctrlSurfaceArea * factor.absolute.quadratic;
+            var baseModule = GetBaseModule<ModuleControlSurface>();
+            module.ctrlSurfaceArea = baseModule.ctrlSurfaceArea * factor.absolute.quadratic;
         }
     }
 
@@ -237,9 +255,125 @@ namespace TweakScale
             }
         }
 
-        public override void OnStartScaling(ScalingFactor factor)
+        public override void OnRescale(ScalingFactor factor)
         {
-            module.area = module.area * factor.absolute.quadratic;
+            var baseModule = GetBaseModule<ModuleResourceIntake>();
+            module.area = baseModule.area * factor.absolute.quadratic;
+        }
+    }
+
+    class TSGenericUpdater : IRescalable
+    {
+        Part _part;
+        Part _basePart;
+
+        public TSGenericUpdater(Part part)
+        {
+            _part = part;
+            _basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
+        }
+
+        private ConfigNode GetConfig(string name)
+        {
+            return GameDatabase.Instance.GetConfigs("TWEAKSCALEEXPONENTS").Where(a => a.name == name).Select(a=>a.config).FirstOrDefault();
+        }
+
+        private IEnumerable<Tuple<PartModule, PartModule>> ModSets
+        {
+            get
+            {
+                return _part.Modules.OfType<PartModule>().Zip(_basePart.Modules.OfType<PartModule>());
+            }
+        }
+
+
+        public void OnRescale(ScalingFactor factor)
+        {
+            foreach (var modSet in ModSets)
+            {
+                var mod = modSet.Item1;
+                var baseMod = modSet.Item2;
+                var modType = mod.GetType();
+
+                var cfg = GetConfig(modType.FullName);
+
+                if (cfg != null)
+                {
+                    MonoBehaviour.print(string.Format("Found config for PartModule {0}", modType.FullName));
+                    foreach (var value in cfg.values.OfType<ConfigNode.Value>())
+                    {
+                        if (value.name == "name")
+                            continue;
+                        MonoBehaviour.print(String.Format("Checking for field {0}", value.name));
+                        double exp;
+                        if (!double.TryParse(value.value, out exp))
+                        {
+                            MonoBehaviour.print(String.Format("Invalid value for exponent {0}: \"{1}\"", value.name, value.value));
+                            continue;
+                        }
+
+                        var field = modType.GetField(value.name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                        var prop = modType.GetProperty(value.name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                        if (field != null)
+                        {
+                            if (field.FieldType == typeof(float))
+                            {
+                                float newValue = (float)field.GetValue(baseMod);
+                                MonoBehaviour.print(String.Format("Old value: {0}", newValue));
+                                newValue = newValue * (float)Math.Pow(factor.absolute.linear, exp);
+                                MonoBehaviour.print(String.Format("New value: {0}", newValue));
+                                field.SetValue(mod, newValue);
+                            }
+                            else if (field.FieldType == typeof(double))
+                            {
+                                double newValue = (double)field.GetValue(baseMod);
+                                MonoBehaviour.print(String.Format("Old value: {0}", newValue));
+                                newValue = newValue * Math.Pow(factor.absolute.linear, exp);
+                                MonoBehaviour.print(String.Format("New value: {0}", newValue));
+                                field.SetValue(mod, newValue);
+                            }
+                            else
+                            {
+                                MonoBehaviour.print(String.Format("Field {0} for PartModule type {1} is of type {2}. Required: float or bool", value.name, modType.FullName, field.FieldType.FullName));
+                                continue;
+                            }
+                        }
+                        else if (prop != null)
+                        {
+                            if (prop.PropertyType == typeof(float))
+                            {
+                                float newValue = (float)prop.GetValue(baseMod, null);
+                                MonoBehaviour.print(String.Format("Old value: {0}", newValue));
+                                newValue = newValue * (float)Math.Pow(factor.absolute.linear, exp);
+                                MonoBehaviour.print(String.Format("New value: {0}", newValue));
+                                prop.SetValue(mod, newValue, null);
+                            }
+                            else if (prop.PropertyType == typeof(double))
+                            {
+                                double newValue = (double)prop.GetValue(baseMod, null);
+                                MonoBehaviour.print(String.Format("Old value: {0}", newValue));
+                                newValue = newValue * Math.Pow(factor.absolute.linear, exp);
+                                MonoBehaviour.print(String.Format("New value: {0}", newValue));
+                                prop.SetValue(mod, newValue, null);
+                            }
+                            else
+                            {
+                                MonoBehaviour.print(String.Format("Property {0} for PartModule type {1} is of type {2}. Required: float or bool", value.name, modType.FullName, prop.PropertyType.FullName));
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            MonoBehaviour.print(String.Format("Non-existent field {0} for PartModule type {1}", value.name, modType.FullName));
+                            continue;
+                        }
+                    }
+                }
+                else
+                {
+                    MonoBehaviour.print(string.Format("Didn't find config for PartModule {0}", modType.FullName));
+                }
+            }
         }
     }
 }

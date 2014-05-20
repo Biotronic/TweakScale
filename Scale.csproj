@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Checker.cs" />
+    <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="KSPI_Updaters.cs" />
     <Compile Include="MFT_Updaters.cs" />
