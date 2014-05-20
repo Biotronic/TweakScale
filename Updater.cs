@@ -19,31 +19,30 @@ namespace TweakScale
         static TweakScaleUpdater()
         {
             // Initialize above array.
-            // Stock modules:
-            ctors["ModuleDeployableSolarPanel"] = a => new TweakScaleSolarPanelUpdater(a);
-            ctors["ModuleEngines"] = a => new TweakScaleEngineUpdater(a);
-            ctors["ModuleEnginesFX"] = a => new TweakScaleEngineFXUpdater(a);
-            ctors["ModuleReactionWheel"] = a => new TweakScaleReactionWheelUpdater(a);
-            ctors["ModuleRCS"] = a => new TweakScaleRCSUpdater(a);
-            ctors["ModuleResourceIntake"] = a => new TweakScaleIntakeUpdater(a);
-            ctors["ModuleControlSurface"] = a => new TweakScaleControlSurfaceUpdater(a);
-
             // Modular Fuel Tanks/Real Fuels:
-            ctors["ModularFuelTanks.ModuleFuelTanks"] = a => new TweakScaleModularFuelTanks4_3Updater(a);
-            ctors["RealFuels.ModuleFuelTanks"] = a => new TweakScaleRealFuelUpdater(a);
+            //ctors["ModularFuelTanks.ModuleFuelTanks"] = a => new TweakScaleModularFuelTanks4_3Updater(a);
+            //ctors["RealFuels.ModuleFuelTanks"] = a => new TweakScaleRealFuelUpdater(a);
+        }
 
-            // KSP Interstellar stuff:
-            ctors["FNPlugin.AlcubierreDrive"] = a => new TweakScaleAlcubierreDriveUpdater(a);
-            ctors["FNPlugin.AntimatterStorageTank"] = a => new TweakScaleAntimatterStorageTankUpdater(a);
-            ctors["FNPlugin.AtmosphericIntake"] = a => new TweakScaleAtmosphericIntakeUpdater(a);
-            ctors["FNPlugin.ElectricEngineController"] = a => new TweakScaleElectricEngineControllerUpdater(a);
-            ctors["FNPlugin.FNGenerator"] = a => new TweakScaleFNGeneratorUpdater(a);
-            ctors["FNPlugin.FNNozzleController"] = a => new TweakScaleFNNozzleControllerUpdater(a);
-            ctors["FNPlugin.FNRadiator"] = a => new TweakScaleFNRadiatorUpdater(a);
-            ctors["FNPlugin.FNRadiator"] = a => new TweakScaleFNRadiatorUpdater(a);
-            ctors["FNPlugin.ISRUScoop"] = a => new TweakScaleISRUScoopUpdater(a);
-            ctors["FNPlugin.MicrowavePowerReceiver"] = a => new TweakScaleMicrowavePowerReceiverUpdater(a);
-            ctors["FNPlugin.ModuleSolarSail"] = a => new TweakScaleSolarSailUpdater(a);
+        /// <summary>
+        /// Registers an updater for partmodules the name <paramref name="moduleName"/>.
+        /// </summary>
+        /// <param name="moduleName">Name of the PartModule type to update.</param>
+        /// <param name="creator">A function that creates an updater for this PartModule type.</param>
+        static public void RegisterUpdater(string moduleName, Func<PartModule, IRescalable> creator)
+        {
+            ctors[moduleName] = creator;
+        }
+
+        /// <summary>
+        /// Registers an updater for modules of the type <typeparamref name="ModuleType"/>.
+        /// </summary>
+        /// <typeparam name="ModuleType">The type of PartModule to update.</typeparam>
+        /// <param name="creator">A function that creates an updater for this PartModule type.</param>
+        static public void RegisterUpdater<ModuleType>(Func<ModuleType, IRescalable> creator) where ModuleType : PartModule
+        {
+            ctors[typeof(ModuleType).FullName] = a => a is ModuleType ? creator(a as ModuleType) : null;
+            ctors[typeof(ModuleType).Name] = a => a is ModuleType ? creator(a as ModuleType) : null;
         }
 
         protected PartModule _module;
@@ -78,9 +77,17 @@ namespace TweakScale
         }
 
         // Creates an updater for each module attached to a part.
-        public static IRescalable[] createUpdaters(Part part)
+        public static IEnumerable<IRescalable> createUpdaters(Part part)
         {
-            return part.Modules.Cast<PartModule>().Select(createUpdater).Where(a => (object)a != null).ToArray();
+            foreach (var mod in part.Modules.Cast<PartModule>())
+            {
+                var updater = createUpdater(mod);
+                if ((object)updater != null)
+                {
+                    yield return updater;
+                }
+            }
+            yield return new TSGenericUpdater(part);
         }
 
         private static IRescalable createUpdater(PartModule module)
@@ -94,172 +101,15 @@ namespace TweakScale
             {
                 return ctors[name](module);
             }
+            name = module.GetType().Name;
+            if (ctors.ContainsKey(name))
+            {
+                return ctors[name](module);
+            }
             return null;
         }
 
         public abstract void OnRescale(ScalingFactor factor);
-    }
-
-    class TweakScaleSolarPanelUpdater : TweakScaleUpdater
-    {
-        public TweakScaleSolarPanelUpdater(PartModule pm)
-            : base(pm)
-        {
-        }
-
-        ModuleDeployableSolarPanel module
-        {
-            get
-            {
-                return (ModuleDeployableSolarPanel)_module;
-            }
-        }
-
-        public override void OnRescale(ScalingFactor factor)
-        {
-            var baseModule = GetBaseModule<ModuleDeployableSolarPanel>();
-            module.chargeRate = baseModule.chargeRate * factor.absolute.quadratic;
-            module.flowRate = baseModule.flowRate * factor.absolute.quadratic;
-            module.panelMass = baseModule.panelMass * factor.absolute.quadratic;
-        }
-    }
-
-    class TweakScaleReactionWheelUpdater : TweakScaleUpdater
-    {
-        public TweakScaleReactionWheelUpdater(PartModule pm)
-            : base(pm)
-        {
-        }
-
-        ModuleReactionWheel module
-        {
-            get
-            {
-                return (ModuleReactionWheel)_module;
-            }
-        }
-
-        public override void OnRescale(ScalingFactor factor)
-        {
-            var baseModule = GetBaseModule<ModuleReactionWheel>();
-            module.PitchTorque = baseModule.PitchTorque * factor.absolute.cubic;
-            module.YawTorque = baseModule.YawTorque * factor.absolute.cubic;
-            module.RollTorque = baseModule.RollTorque * factor.absolute.cubic;
-        }
-    }
-
-    class TweakScaleEngineUpdater : TweakScaleUpdater
-    {
-        public TweakScaleEngineUpdater(PartModule pm)
-            : base(pm)
-        {
-        }
-
-        ModuleEngines module
-        {
-            get
-            {
-                return (ModuleEngines)_module;
-            }
-        }
-
-        public override void OnRescale(ScalingFactor factor)
-        {
-            var baseModule = GetBaseModule<ModuleEngines>();
-            module.minThrust = baseModule.minThrust * factor.absolute.quadratic;
-            module.maxThrust = baseModule.maxThrust * factor.absolute.quadratic;
-            module.heatProduction = baseModule.heatProduction * factor.absolute.squareRoot;
-        }
-    }
-
-    class TweakScaleEngineFXUpdater : TweakScaleUpdater
-    {
-        public TweakScaleEngineFXUpdater(PartModule pm)
-            : base(pm)
-        {
-        }
-
-        ModuleEnginesFX module
-        {
-            get
-            {
-                return (ModuleEnginesFX)_module;
-            }
-        }
-
-        public override void OnRescale(ScalingFactor factor)
-        {
-            var baseModule = GetBaseModule<ModuleEnginesFX>();
-            module.minThrust = baseModule.minThrust * factor.absolute.quadratic;
-            module.maxThrust = baseModule.maxThrust * factor.absolute.quadratic;
-            module.heatProduction = baseModule.heatProduction * factor.absolute.squareRoot;
-        }
-    }
-
-    class TweakScaleRCSUpdater : TweakScaleUpdater
-    {
-        public TweakScaleRCSUpdater(PartModule pm)
-            : base(pm)
-        {
-        }
-
-        ModuleRCS module
-        {
-            get
-            {
-                return (ModuleRCS)_module;
-            }
-        }
-
-        public override void OnRescale(ScalingFactor factor)
-        {
-            var baseModule = GetBaseModule<ModuleRCS>();
-            module.thrusterPower = baseModule.thrusterPower * factor.absolute.quadratic;
-        }
-    }
-
-    class TweakScaleControlSurfaceUpdater : TweakScaleUpdater
-    {
-        public TweakScaleControlSurfaceUpdater(PartModule pm)
-            : base(pm)
-        {
-        }
-
-        ModuleControlSurface module
-        {
-            get
-            {
-                return (ModuleControlSurface)_module;
-            }
-        }
-
-        public override void OnRescale(ScalingFactor factor)
-        {
-            var baseModule = GetBaseModule<ModuleControlSurface>();
-            module.ctrlSurfaceArea = baseModule.ctrlSurfaceArea * factor.absolute.quadratic;
-        }
-    }
-
-    class TweakScaleIntakeUpdater : TweakScaleUpdater
-    {
-        public TweakScaleIntakeUpdater(PartModule pm)
-            : base(pm)
-        {
-        }
-
-        ModuleResourceIntake module
-        {
-            get
-            {
-                return (ModuleResourceIntake)_module;
-            }
-        }
-
-        public override void OnRescale(ScalingFactor factor)
-        {
-            var baseModule = GetBaseModule<ModuleResourceIntake>();
-            module.area = baseModule.area * factor.absolute.quadratic;
-        }
     }
 
     class TSGenericUpdater : IRescalable
@@ -299,12 +149,10 @@ namespace TweakScale
 
                 if (cfg != null)
                 {
-                    MonoBehaviour.print(string.Format("Found config for PartModule {0}", modType.FullName));
                     foreach (var value in cfg.values.OfType<ConfigNode.Value>())
                     {
                         if (value.name == "name")
                             continue;
-                        MonoBehaviour.print(String.Format("Checking for field {0}", value.name));
                         double exp;
                         if (!double.TryParse(value.value, out exp))
                         {
@@ -319,17 +167,13 @@ namespace TweakScale
                             if (field.FieldType == typeof(float))
                             {
                                 float newValue = (float)field.GetValue(baseMod);
-                                MonoBehaviour.print(String.Format("Old value: {0}", newValue));
                                 newValue = newValue * (float)Math.Pow(factor.absolute.linear, exp);
-                                MonoBehaviour.print(String.Format("New value: {0}", newValue));
                                 field.SetValue(mod, newValue);
                             }
                             else if (field.FieldType == typeof(double))
                             {
                                 double newValue = (double)field.GetValue(baseMod);
-                                MonoBehaviour.print(String.Format("Old value: {0}", newValue));
                                 newValue = newValue * Math.Pow(factor.absolute.linear, exp);
-                                MonoBehaviour.print(String.Format("New value: {0}", newValue));
                                 field.SetValue(mod, newValue);
                             }
                             else
@@ -343,17 +187,13 @@ namespace TweakScale
                             if (prop.PropertyType == typeof(float))
                             {
                                 float newValue = (float)prop.GetValue(baseMod, null);
-                                MonoBehaviour.print(String.Format("Old value: {0}", newValue));
                                 newValue = newValue * (float)Math.Pow(factor.absolute.linear, exp);
-                                MonoBehaviour.print(String.Format("New value: {0}", newValue));
                                 prop.SetValue(mod, newValue, null);
                             }
                             else if (prop.PropertyType == typeof(double))
                             {
                                 double newValue = (double)prop.GetValue(baseMod, null);
-                                MonoBehaviour.print(String.Format("Old value: {0}", newValue));
                                 newValue = newValue * Math.Pow(factor.absolute.linear, exp);
-                                MonoBehaviour.print(String.Format("New value: {0}", newValue));
                                 prop.SetValue(mod, newValue, null);
                             }
                             else
@@ -368,10 +208,6 @@ namespace TweakScale
                             continue;
                         }
                     }
-                }
-                else
-                {
-                    MonoBehaviour.print(string.Format("Didn't find config for PartModule {0}", modType.FullName));
                 }
             }
         }

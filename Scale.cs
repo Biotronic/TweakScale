@@ -65,8 +65,7 @@ namespace TweakScale
 
         private Vector3 savedScale;
 
-        //private IRescalable[] updaters;
-        private IRescalable updater;
+        private IEnumerable<IRescalable> updaters;
 
         /// <summary>
         /// The ConfigNode that belongs to this module.
@@ -155,8 +154,7 @@ namespace TweakScale
             }
             basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
 
-            //updaters = TweakScaleUpdater.createUpdaters(part);
-            updater = new TSGenericUpdater(part);
+            updaters = TweakScaleUpdater.createUpdaters(part);
 
             SetupFromConfig(new ScaleConfig(moduleNode));
 
@@ -174,7 +172,7 @@ namespace TweakScale
                 part.mass = basePart.mass * scalingFactor.absolute.cubic;
             }
 
-            //foreach (var updater in updaters)
+            foreach (var updater in updaters)
             {
                 updater.OnRescale(scalingFactor);
             }
@@ -232,7 +230,7 @@ namespace TweakScale
                 moveNode(part.srfAttachNode, basePart.srfAttachNode, rescaleVector, moveParts);
             if (moveParts)
             {
-                Vector3 relativeVector = Vector3.one * factor.relative.linear;
+                Vector3 relativeVector = Vector3.one * factor.absolute.linear;
                 foreach (Part child in part.children)
                 {
                     if (child.srfAttachNode != null && child.srfAttachNode.attachedPart == part) // part is attached to us, but not on a node
@@ -248,14 +246,14 @@ namespace TweakScale
         private void updateBySurfaceArea(ScalingFactor factor) // values that change relative to the surface area (i.e. scale squared)
         {
             if (basePart.breakingForce == 22f) // not defined in the config, set to a reasonable default
-                part.breakingForce = 32.0f * factor.relative.quadratic; // scale 1 = 50, scale 2 = 200, etc.
+                part.breakingForce = 32.0f * factor.absolute.quadratic; // scale 1 = 50, scale 2 = 200, etc.
             else // is defined, scale it relative to new surface area
                 part.breakingForce = basePart.breakingForce * factor.absolute.quadratic;
             if (part.breakingForce < 22f)
                 part.breakingForce = 22f;
 
             if (basePart.breakingTorque == 22f)
-                part.breakingTorque = 32.0f * factor.relative.quadratic;
+                part.breakingTorque = 32.0f * factor.absolute.quadratic;
             else
                 part.breakingTorque = basePart.breakingTorque * factor.absolute.quadratic;
             if (part.breakingTorque < 22f)
@@ -318,7 +316,7 @@ namespace TweakScale
                     updateWindow(); // call this last
 
                     currentScale = tweakScale;
-                    //foreach (var updater in updaters)
+                    foreach (var updater in updaters)
                     {
                         updater.OnRescale(scalingFactor);
                     }
