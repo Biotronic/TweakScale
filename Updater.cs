@@ -41,6 +41,7 @@ namespace TweakScale
         /// <param name="creator">A function that creates an updater for this PartModule type.</param>
         static public void RegisterUpdater<ModuleType>(Func<ModuleType, IRescalable> creator) where ModuleType : PartModule
         {
+            MonoBehaviour.print("Registering module updater: " + typeof(ModuleType).FullName);
             ctors[typeof(ModuleType).FullName] = a => a is ModuleType ? creator(a as ModuleType) : null;
             ctors[typeof(ModuleType).Name] = a => a is ModuleType ? creator(a as ModuleType) : null;
         }

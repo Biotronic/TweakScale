@@ -37,9 +37,9 @@
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>E:\Games\Steam\steamapps\common\Kerbal Space Program\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="KSPAPIExtensions, Version=1.4.3.12, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="KSPAPIExtensions, Version=1.4.3.1, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>E:\Games\Steam\steamapps\common\Kerbal Space Program\GameData\KSPAPIExtensions.dll</HintPath>
+      <HintPath>Gamedata\TweakScale\plugins\KSPAPIExtensions.dll</HintPath>
     </Reference>
     <Reference Include="modularFuelTanks">
       <HintPath>E:\Games\Steam\steamapps\common\Kerbal Space Program\GameData\ModularFuelTanks\Plugins\modularFuelTanks.dll</HintPath>

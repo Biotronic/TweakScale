@@ -168,6 +168,10 @@ namespace TweakScale
             }
             else
             {
+                if (!isFreeScale)
+                {
+                    tweakName = Tools.ClosestIndex(defaultScale, scaleFactors);
+                }
                 updateByWidth(scalingFactor, false);
                 part.mass = basePart.mass * scalingFactor.absolute.cubic;
             }
