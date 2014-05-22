@@ -7,6 +7,32 @@ using UnityEngine;
 
 namespace TweakScale
 {
+    public class RescalableRegistratorAddon : MonoBehaviour
+    {
+        private static bool loadedInScene;
+
+        public void Start()
+        {
+            if (loadedInScene)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            loadedInScene = true;
+            OnStart();
+        }
+
+        public virtual void OnStart()
+        {
+        }
+
+        public void Update()
+        {
+            loadedInScene = false;
+            Destroy(gameObject);
+        }
+    }
+
     public interface IRescalable
     {
         void OnRescale(ScalingFactor factor);
@@ -117,11 +143,13 @@ namespace TweakScale
     {
         Part _part;
         Part _basePart;
+        TweakScale _ts;
 
         public TSGenericUpdater(Part part)
         {
             _part = part;
             _basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
+            _ts = part.Modules.OfType<TweakScale>().First();
         }
 
         private ConfigNode GetConfig(string name)
@@ -137,6 +165,88 @@ namespace TweakScale
             }
         }
 
+        private T GetValue<T>(FieldInfo field, PropertyInfo prop, object source)
+        {
+            if (field != null)
+                return (T)Convert.ChangeType(field.GetValue(source), typeof(T));
+            else
+                return (T)Convert.ChangeType(prop.GetValue(source, null), typeof(T));
+        }
+
+        private void SetValue<T>(FieldInfo field, PropertyInfo prop, object source, T value)
+        {
+            if (field != null)
+                field.SetValue(source, Convert.ChangeType(value, field.FieldType));
+            else
+                prop.SetValue(source, Convert.ChangeType(value, prop.PropertyType), null);
+        }
+
+        private bool CheckType(Type needle, params Type[] haystack)
+        {
+            foreach (var straw in haystack)
+                if (straw == needle)
+                    return true;
+            return false;
+        }
+
+        private void UpdateModule(ConfigNode.Value value, PartModule mod, PartModule baseMod, ScalingFactor factor)
+        {
+            var modType = mod.GetType();
+            var field = modType.GetField(value.name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            var prop = modType.GetProperty(value.name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+
+            if (field == null && prop == null)
+            {
+                Tools.LogErrorMessageF("Non-existent field {0} for PartModule type {1}", value.name, modType.FullName);
+                return;
+            }
+            if ((field != null && !CheckType(field.FieldType, typeof(float), typeof(double))) ||
+                (prop != null && !CheckType(prop.PropertyType, typeof(float), typeof(double))))
+            {
+                Tools.LogErrorMessageF("Field {0} for PartModule type {1} is of type {2}. Required: float or double", value.name, modType.FullName, field.FieldType.FullName);
+                return;
+            }
+
+            if (value.value.Contains(","))
+            {
+                var values = value.value.Split(',').Select(a => (double)Convert.ChangeType(a, typeof(double))).ToArray();
+
+                if (values.Length >= factor.index || factor.index < 0)
+                {
+                    SetValue(field, prop, mod, values[factor.index]);
+                }
+                else
+                {
+                    Tools.LogErrorMessageF("Can't set value from array: Index out of bounds: {0}.", factor.index);
+                }
+            }
+            else
+            {
+                double exp;
+                if (!double.TryParse(value.value, out exp))
+                {
+                    Tools.LogErrorMessageF("Invalid value for exponent {0}: \"{1}\"", value.name, value.value);
+                    return;
+                }
+                var newValue = GetValue<double>(field, prop, baseMod);
+                newValue *= Math.Pow(factor.absolute.linear, exp);
+                SetValue(field, prop, mod, newValue);
+            }
+        }
+
+        private void UpdateFromCfg(ConfigNode cfg, PartModule mod, PartModule baseMod, ScalingFactor factor)
+        {
+
+            if (cfg != null)
+            {
+                foreach (var value in cfg.values.OfType<ConfigNode.Value>())
+                {
+                    if (value.name == "name")
+                        continue;
+                    UpdateModule(value, mod, baseMod, factor);
+                }
+            }
+        }
 
         public void OnRescale(ScalingFactor factor)
         {
@@ -146,69 +256,14 @@ namespace TweakScale
                 var baseMod = modSet.Item2;
                 var modType = mod.GetType();
 
-                var cfg = GetConfig(modType.FullName);
+                var localModules = _ts.moduleNode.GetNodes("MODULE");
 
-                if (cfg != null)
+                UpdateFromCfg(GetConfig(modType.FullName), mod, baseMod, factor);
+                UpdateFromCfg(localModules.Where(a => a.GetValue("name") == modType.FullName).FirstOrDefault(), mod, baseMod, factor);
+                if (modType.FullName != modType.Name)
                 {
-                    foreach (var value in cfg.values.OfType<ConfigNode.Value>())
-                    {
-                        if (value.name == "name")
-                            continue;
-                        double exp;
-                        if (!double.TryParse(value.value, out exp))
-                        {
-                            MonoBehaviour.print(String.Format("Invalid value for exponent {0}: \"{1}\"", value.name, value.value));
-                            continue;
-                        }
-
-                        var field = modType.GetField(value.name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-                        var prop = modType.GetProperty(value.name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-                        if (field != null)
-                        {
-                            if (field.FieldType == typeof(float))
-                            {
-                                float newValue = (float)field.GetValue(baseMod);
-                                newValue = newValue * (float)Math.Pow(factor.absolute.linear, exp);
-                                field.SetValue(mod, newValue);
-                            }
-                            else if (field.FieldType == typeof(double))
-                            {
-                                double newValue = (double)field.GetValue(baseMod);
-                                newValue = newValue * Math.Pow(factor.absolute.linear, exp);
-                                field.SetValue(mod, newValue);
-                            }
-                            else
-                            {
-                                MonoBehaviour.print(String.Format("Field {0} for PartModule type {1} is of type {2}. Required: float or bool", value.name, modType.FullName, field.FieldType.FullName));
-                                continue;
-                            }
-                        }
-                        else if (prop != null)
-                        {
-                            if (prop.PropertyType == typeof(float))
-                            {
-                                float newValue = (float)prop.GetValue(baseMod, null);
-                                newValue = newValue * (float)Math.Pow(factor.absolute.linear, exp);
-                                prop.SetValue(mod, newValue, null);
-                            }
-                            else if (prop.PropertyType == typeof(double))
-                            {
-                                double newValue = (double)prop.GetValue(baseMod, null);
-                                newValue = newValue * Math.Pow(factor.absolute.linear, exp);
-                                prop.SetValue(mod, newValue, null);
-                            }
-                            else
-                            {
-                                MonoBehaviour.print(String.Format("Property {0} for PartModule type {1} is of type {2}. Required: float or bool", value.name, modType.FullName, prop.PropertyType.FullName));
-                                continue;
-                            }
-                        }
-                        else
-                        {
-                            MonoBehaviour.print(String.Format("Non-existent field {0} for PartModule type {1}", value.name, modType.FullName));
-                            continue;
-                        }
-                    }
+                    UpdateFromCfg(GetConfig(modType.Name), mod, baseMod, factor);
+                    UpdateFromCfg(localModules.Where(a => a.GetValue("name") == modType.Name).FirstOrDefault(), mod, baseMod, factor);
                 }
             }
         }

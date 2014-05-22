@@ -48,6 +48,7 @@ namespace TweakScale
 
         FactorSet _absolute;
         FactorSet _relative;
+        int _index;
 
         public FactorSet absolute
         {
@@ -63,11 +64,19 @@ namespace TweakScale
                 return _relative;
             }
         }
+        public int index
+        {
+            get
+            {
+                return _index;
+            }
+        }
 
-        public ScalingFactor(float abs, float rel)
+        public ScalingFactor(float abs, float rel, int idx)
         {
             _absolute = new FactorSet(abs);
             _relative = new FactorSet(rel);
+            _index = idx;
         }
     }
 }

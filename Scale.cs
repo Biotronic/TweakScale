@@ -14,6 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 
 namespace TweakScale
@@ -70,7 +71,7 @@ namespace TweakScale
         /// <summary>
         /// The ConfigNode that belongs to this module.
         /// </summary>
-        private ConfigNode moduleNode
+        public ConfigNode moduleNode
         {
             get
             {
@@ -83,7 +84,7 @@ namespace TweakScale
         {
             get
             {
-                return new ScalingFactor(tweakScale / defaultScale, tweakScale / currentScale);
+                return new ScalingFactor(tweakScale / defaultScale, tweakScale / currentScale, isFreeScale ? -1 : tweakName);
             }
         }
 
@@ -170,7 +171,7 @@ namespace TweakScale
             {
                 if (!isFreeScale)
                 {
-                    tweakName = Tools.ClosestIndex(defaultScale, scaleFactors);
+                    tweakName = Tools.ClosestIndex(tweakScale, scaleFactors);
                 }
                 updateByWidth(scalingFactor, false);
                 part.mass = basePart.mass * scalingFactor.absolute.cubic;
@@ -211,8 +212,6 @@ namespace TweakScale
                 else
                     node.attachedPart.transform.Translate(node.position - oldPosition, part.transform);
             }
-
-
 
             node.size = (int)(baseNode.size + (tweakScale - defaultScale) / (maxSize - minSize) * 5);
             if (node.size < 0) node.size = 0;

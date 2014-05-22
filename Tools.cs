@@ -48,6 +48,11 @@ namespace TweakScale
             return result;
         }
 
+        public static void LogErrorMessageF(string format, params object[] args)
+        {
+            MonoBehaviour.print(string.Format(format, args));
+        }
+
         /// <summary>
         /// Reads a value from the ConfigNode and magically converts it to the type you ask. Tested for float, boolean and double[]. Anything else is at your own risk.
         /// </summary>
@@ -69,7 +74,7 @@ namespace TweakScale
             }
             catch (InvalidCastException)
             {
-                MonoBehaviour.print("Failed to convert string value \"" + cfgValue + "\" to type " + typeof(T).Name);
+                LogErrorMessageF("Failed to convert string value \"{0}\" to type {1}", cfgValue, typeof(T).Name);
                 return defaultValue;
             }
         }
@@ -87,7 +92,20 @@ namespace TweakScale
             }
             catch (InvalidCastException)
             {
-                MonoBehaviour.print("Failed to convert string value \"" + cfgValue + "\" to type " + typeof(T[]).Name);
+                LogErrorMessageF("Failed to convert string value \"{0}\" to type {1}", cfgValue, typeof(T).Name);
+                return defaultValue;
+            }
+        }
+
+        public static T[] ConvertString<T>(string value, T[] defaultValue)
+        {
+            try
+            {
+                return value.Split(',').Select(a => (T)Convert.ChangeType(a, typeof(T))).ToArray();
+            }
+            catch (InvalidCastException)
+            {
+                LogErrorMessageF("Failed to convert string value \"{0}\" to type {1}", value, typeof(T[]).Name);
                 return defaultValue;
             }
         }
