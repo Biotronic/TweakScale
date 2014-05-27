@@ -305,14 +305,17 @@ namespace TweakScale
 
         public void Update()
         {
-            if (!isFreeScale)
-            {
-                tweakScale = scaleFactors[tweakName];
-            }
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
             {
-                if (tweakScale != currentScale) // user has changed the scale tweakable
+                bool changed = isFreeScale ? tweakScale != currentScale : currentScale != scaleFactors[tweakName];
+
+                if (changed) // user has changed the scale tweakable
                 {
+                    if (!isFreeScale)
+                    {
+                        tweakScale = scaleFactors[tweakName];
+                    }
+
                     updateBySurfaceArea(scalingFactor); // call this first, results are used by updateByWidth
                     updateByWidth(scalingFactor, true);
                     updateByRelativeVolume(scalingFactor);
