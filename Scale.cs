@@ -99,6 +99,14 @@ namespace TweakScale
             }
         }
 
+        private float rescaleFactor
+        {
+            get
+            {
+                return PartNode.HasValue("rescaleFactor") ? float.Parse(PartNode.GetValue("rescaleFactor")) : 1.0f;
+            }
+        }
+
         private float minSize
         {
             get
@@ -230,9 +238,9 @@ namespace TweakScale
 
         private void updateByWidth(ScalingFactor factor, bool moveParts)
         {
-            Vector3 rescaleVector = part.transform.GetChild(0).localScale * factor.relative.linear;
+            Vector3 rescaleVector = Vector3.one * factor.absolute.linear;
 
-            savedScale = part.transform.GetChild(0).localScale = rescaleVector;
+            savedScale = part.transform.GetChild(0).localScale = basePart.transform.GetChild(0).localScale * factor.absolute.linear * rescaleFactor;
             part.transform.GetChild(0).hasChanged = true;
             part.transform.hasChanged = true;
 
