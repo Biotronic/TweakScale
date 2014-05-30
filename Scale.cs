@@ -69,14 +69,25 @@ namespace TweakScale
         private IEnumerable<IRescalable> updaters;
 
         /// <summary>
+        /// The ConfigNode that belongs to the part this module affects.
+        /// </summary>
+        private ConfigNode PartNode
+        {
+            get
+            {
+                return GameDatabase.Instance.GetConfigs("PART").Single(c => c.name.Replace('_', '.') == part.partInfo.name)
+                    .config;
+            }
+        }
+
+        /// <summary>
         /// The ConfigNode that belongs to this module.
         /// </summary>
         public ConfigNode moduleNode
         {
             get
             {
-                return GameDatabase.Instance.GetConfigs("PART").Single(c => c.name.Replace('_', '.') == part.partInfo.name)
-                    .config.GetNodes("MODULE").Single(n => n.GetValue("name") == moduleName);
+                return PartNode.GetNodes("MODULE").Single(n => n.GetValue("name") == moduleName);
             }
         }
 
@@ -87,7 +98,6 @@ namespace TweakScale
                 return new ScalingFactor(tweakScale / defaultScale, tweakScale / currentScale, isFreeScale ? -1 : tweakName);
             }
         }
-
 
         private float minSize
         {
@@ -120,7 +130,6 @@ namespace TweakScale
                 }
             }
         }
-
 
         private void SetupFromConfig(ScaleConfig config)
         {
@@ -221,9 +230,9 @@ namespace TweakScale
 
         private void updateByWidth(ScalingFactor factor, bool moveParts)
         {
-            Vector3 rescaleVector = Vector3.one * factor.absolute.linear;
+            Vector3 rescaleVector = part.transform.GetChild(0).localScale * factor.relative.linear;
 
-            savedScale = part.transform.GetChild(0).localScale = Vector3.Scale(basePart.transform.GetChild(0).localScale, rescaleVector);
+            savedScale = part.transform.GetChild(0).localScale = rescaleVector;
             part.transform.GetChild(0).hasChanged = true;
             part.transform.hasChanged = true;
 
