@@ -14,7 +14,6 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 
 namespace TweakScale
@@ -264,26 +263,8 @@ namespace TweakScale
             };
         }
 
-        private void updateBySurfaceArea(ScalingFactor factor) // values that change relative to the surface area (i.e. scale squared)
-        {
-            if (basePart.breakingForce == 22f) // not defined in the config, set to a reasonable default
-                part.breakingForce = 32.0f * factor.absolute.quadratic; // scale 1 = 50, scale 2 = 200, etc.
-            else // is defined, scale it relative to new surface area
-                part.breakingForce = basePart.breakingForce * factor.absolute.quadratic;
-            if (part.breakingForce < 22f)
-                part.breakingForce = 22f;
-
-            if (basePart.breakingTorque == 22f)
-                part.breakingTorque = 32.0f * factor.absolute.quadratic;
-            else
-                part.breakingTorque = basePart.breakingTorque * factor.absolute.quadratic;
-            if (part.breakingTorque < 22f)
-                part.breakingTorque = 22f;
-        }
-
         private void updateByRelativeVolume(ScalingFactor factor) // values that change relative to the volume (i.e. scale cubed)
         {
-
             part.mass = part.mass * massFactors.Select((a, i) => (float)Math.Pow(a * factor.relative.linear, i + 1)).Sum();
 
             var newResourceValues = part.Resources.OfType<PartResource>().Select(a => new[] { a.amount * factor.relative.cubic, a.maxAmount * factor.relative.cubic }).ToArray();

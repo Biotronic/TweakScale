@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using UnityEngine;
 
 namespace TweakScale
@@ -155,17 +154,30 @@ namespace TweakScale
             _localModules = _ts.moduleNode.GetNodes("MODULE");
         }
 
+        private IEnumerable<ConfigNode> GetConfigs()
+        {
+            foreach (var node in GameDatabase.Instance.GetConfigs("TWEAKSCALEEXPONENTS").Select(a => a.config).Where(a => !a.HasValue("name")))
+            {
+                yield return node;
+            }
+            foreach (var node in _localModules.Where(a => !a.HasValue("name")))
+            {
+                yield return node;
+            }
+        }
+
         private IEnumerable<ConfigNode> GetConfigs(params string[] names)
         {
-            ConfigNode n = null;
             foreach (var name in names)
             {
-                n = GameDatabase.Instance.GetConfigs("TWEAKSCALEEXPONENTS").Where(a => a.name == name).Select(a => a.config).FirstOrDefault();
-                if (n != null)
-                    yield return n;
-                n = _localModules.Where(a => a.GetValue("name") == name).FirstOrDefault();
-                if (n != null)
-                    yield return n;
+                foreach (var node in GameDatabase.Instance.GetConfigs("TWEAKSCALEEXPONENTS").Where(a => a.name == name).Select(a => a.config))
+                {
+                    yield return node;
+                }
+                foreach (var node in _localModules.Where(a => a.GetValue("name") == name))
+                {
+                    yield return node;
+                }
             }
         }
 
@@ -227,12 +239,12 @@ namespace TweakScale
             if (f1 == null)
                 return;
 
-            var name = cfg.HasValue("name") ? cfg.GetValue("name") : "*";
-
             if (f1.FieldType.GetInterface("IEnumerable") != null)
             {
-                var ie1 = ((IEnumerable)f1.GetValue(mod)).OfType<object>();
-                var ie2 = ((IEnumerable)f1.GetValue(baseMod)).OfType<object>();
+                var name = cfg.HasValue("name") ? cfg.GetValue("name") : "*";
+
+                var ie1 = ((IEnumerable)f1.GetValue(mod)).Cast<object>();
+                var ie2 = ((IEnumerable)f1.GetValue(baseMod)).Cast<object>();
                 if (name == "*")
                 {
                     foreach (var e in ie1.Zip(ie2))
@@ -286,15 +298,18 @@ namespace TweakScale
 
         public void OnRescale(ScalingFactor factor)
         {
+            var cfgs = GetConfigs();
+            UpdateFromCfgs(cfgs, _part, _basePart, factor);
+
             foreach (var modSet in ModSets)
             {
                 var mod = modSet.Item1;
                 var baseMod = modSet.Item2;
                 var modType = mod.GetType();
 
-                var v = GetConfigs(modType.Name, modType.FullName);
+                cfgs = GetConfigs(modType.Name, modType.FullName);
 
-                UpdateFromCfgs(v, mod, baseMod, factor);
+                UpdateFromCfgs(cfgs, mod, baseMod, factor);
             }
         }
     }
