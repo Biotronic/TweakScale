@@ -66,6 +66,9 @@ namespace TweakScale
 
         private Vector3 savedScale;
 
+        [KSPField(isPersistant = true)]
+        public Vector3 defaultTransformScale = new Vector3(0f, 0f, 0f);
+
         private IEnumerable<IRescalable> updaters;
 
         /// <summary>
@@ -96,14 +99,6 @@ namespace TweakScale
             get
             {
                 return new ScalingFactor(tweakScale / defaultScale, tweakScale / currentScale, isFreeScale ? -1 : tweakName);
-            }
-        }
-
-        private float rescaleFactor
-        {
-            get
-            {
-                return PartNode.HasValue("rescaleFactor") ? float.Parse(PartNode.GetValue("rescaleFactor")) : 1.0f;
             }
         }
 
@@ -238,9 +233,15 @@ namespace TweakScale
 
         private void updateByWidth(ScalingFactor factor, bool moveParts)
         {
+            if (defaultTransformScale.x == 0.0f)
+            {
+                print(String.Format("Setting defaultTransformScale to {0} {1} {2}", part.transform.GetChild(0).localScale.x, part.transform.GetChild(0).localScale.y, part.transform.GetChild(0).localScale.z));
+                defaultTransformScale = part.transform.GetChild(0).localScale;
+            }
+
             Vector3 rescaleVector = Vector3.one * factor.absolute.linear;
 
-            savedScale = part.transform.GetChild(0).localScale = basePart.transform.GetChild(0).localScale * factor.absolute.linear * rescaleFactor;
+            savedScale = part.transform.GetChild(0).localScale = factor.absolute.linear * defaultTransformScale;
             part.transform.GetChild(0).hasChanged = true;
             part.transform.hasChanged = true;
 

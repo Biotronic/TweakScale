@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -144,17 +145,28 @@ namespace TweakScale
         Part _part;
         Part _basePart;
         TweakScale _ts;
+        ConfigNode[] _localModules;
 
         public TSGenericUpdater(Part part)
         {
             _part = part;
             _basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
             _ts = part.Modules.OfType<TweakScale>().First();
+            _localModules = _ts.moduleNode.GetNodes("MODULE");
         }
 
-        private ConfigNode GetConfig(string name)
+        private IEnumerable<ConfigNode> GetConfigs(params string[] names)
         {
-            return GameDatabase.Instance.GetConfigs("TWEAKSCALEEXPONENTS").Where(a => a.name == name).Select(a=>a.config).FirstOrDefault();
+            ConfigNode n = null;
+            foreach (var name in names)
+            {
+                n = GameDatabase.Instance.GetConfigs("TWEAKSCALEEXPONENTS").Where(a => a.name == name).Select(a => a.config).FirstOrDefault();
+                if (n != null)
+                    yield return n;
+                n = _localModules.Where(a => a.GetValue("name") == name).FirstOrDefault();
+                if (n != null)
+                    yield return n;
+            }
         }
 
         private IEnumerable<Tuple<PartModule, PartModule>> ModSets
@@ -165,45 +177,20 @@ namespace TweakScale
             }
         }
 
-        private T GetValue<T>(FieldInfo field, PropertyInfo prop, object source)
+        private void UpdateModule(ConfigNode.Value value, object mod, object baseMod, ScalingFactor factor)
         {
-            if (field != null)
-                return (T)Convert.ChangeType(field.GetValue(source), typeof(T));
-            else
-                return (T)Convert.ChangeType(prop.GetValue(source, null), typeof(T));
-        }
-
-        private void SetValue<T>(FieldInfo field, PropertyInfo prop, object source, T value)
-        {
-            if (field != null)
-                field.SetValue(source, Convert.ChangeType(value, field.FieldType));
-            else
-                prop.SetValue(source, Convert.ChangeType(value, prop.PropertyType), null);
-        }
-
-        private bool CheckType(Type needle, params Type[] haystack)
-        {
-            foreach (var straw in haystack)
-                if (straw == needle)
-                    return true;
-            return false;
-        }
-
-        private void UpdateModule(ConfigNode.Value value, PartModule mod, PartModule baseMod, ScalingFactor factor)
-        {
+            var baseVal = MemberChanger<double>.CreateFromName(baseMod, value.name);
+            var val = MemberChanger<double>.CreateFromName(mod, value.name);
             var modType = mod.GetType();
-            var field = modType.GetField(value.name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-            var prop = modType.GetProperty(value.name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
-            if (field == null && prop == null)
+            if (val == null)
             {
-                Tools.LogErrorMessageF("Non-existent field {0} for PartModule type {1}", value.name, modType.FullName);
+                Tools.LogErrorMessageF("Non-existent Member {0} for PartModule type {1}", value.name, modType.FullName);
                 return;
             }
-            if ((field != null && !CheckType(field.FieldType, typeof(float), typeof(double))) ||
-                (prop != null && !CheckType(prop.PropertyType, typeof(float), typeof(double))))
+            if (val.MemberType != typeof(float) && val.MemberType != typeof(double))
             {
-                Tools.LogErrorMessageF("Field {0} for PartModule type {1} is of type {2}. Required: float or double", value.name, modType.FullName, field.FieldType.FullName);
+                Tools.LogErrorMessageF("Member {0} for PartModule type {1} is of type {2}. Required: float or double", value.name, modType.FullName, val.MemberType.FullName);
                 return;
             }
 
@@ -213,7 +200,7 @@ namespace TweakScale
 
                 if (values.Length >= factor.index || factor.index < 0)
                 {
-                    SetValue(field, prop, mod, values[factor.index]);
+                    val.Value =values[factor.index];
                 }
                 else
                 {
@@ -228,22 +215,71 @@ namespace TweakScale
                     Tools.LogErrorMessageF("Invalid value for exponent {0}: \"{1}\"", value.name, value.value);
                     return;
                 }
-                var newValue = GetValue<double>(field, prop, baseMod);
+                var newValue = baseVal.Value;
                 newValue *= Math.Pow(factor.absolute.linear, exp);
-                SetValue(field, prop, mod, newValue);
+                val.Value = newValue;
             }
         }
 
-        private void UpdateFromCfg(ConfigNode cfg, PartModule mod, PartModule baseMod, ScalingFactor factor)
+        private void UpdateSubItem(ConfigNode cfg, object mod, object baseMod, ScalingFactor factor)
         {
+            var f1 = mod.GetType().GetField(cfg.name, BindingFlags.Instance | BindingFlags.Public);
+            if (f1 == null)
+                return;
 
-            if (cfg != null)
+            var name = cfg.GetValue("name");
+
+            if (f1.FieldType.GetInterface("IEnumerable") != null)
             {
-                foreach (var value in cfg.values.OfType<ConfigNode.Value>())
+                var ie1 = ((IEnumerable)f1.GetValue(mod)).OfType<object>();
+                var ie2 = ((IEnumerable)f1.GetValue(baseMod)).OfType<object>();
+                if (name == "*")
+                {
+                    foreach (var e in ie1.Zip(ie2))
+                    {
+                        UpdateFromCfgs(new[] { cfg }, e.Item1, e.Item2, factor);
+                    }
+                }
+                else
+                {
+                    foreach (var e in ie1.Zip(ie2))
+                    {
+                        var et = e.Item1.GetType();
+                        var n = et.GetField("name", BindingFlags.Instance | BindingFlags.Public);
+                        if (n.FieldType != typeof(string))
+                            continue;
+
+                        string nn = (string)n.GetValue(e.Item1);
+                        if (nn == name)
+                        {
+                            UpdateFromCfgs(new[] { cfg }, e.Item1, e.Item2, factor);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                UpdateFromCfgs(new[] { cfg }, f1.GetValue(mod), f1.GetValue(baseMod), factor);
+            }
+        }
+
+        private void UpdateFromCfgs(IEnumerable<ConfigNode> cfgs, object mod, object baseMod, ScalingFactor factor)
+        {
+            if (mod == null || baseMod == null || cfgs == null)
+                return;
+
+            foreach (var cfg in cfgs)
+            {
+                foreach (ConfigNode.Value value in cfg.values)
                 {
                     if (value.name == "name")
                         continue;
                     UpdateModule(value, mod, baseMod, factor);
+                }
+
+                foreach (ConfigNode node in cfg.nodes.OfType<ConfigNode>().Where(a=>a.HasValue("name")))
+                {
+                    UpdateSubItem(node, mod, baseMod, factor);
                 }
             }
         }
@@ -256,15 +292,9 @@ namespace TweakScale
                 var baseMod = modSet.Item2;
                 var modType = mod.GetType();
 
-                var localModules = _ts.moduleNode.GetNodes("MODULE");
+                var v = GetConfigs(modType.Name, modType.FullName);
 
-                UpdateFromCfg(GetConfig(modType.FullName), mod, baseMod, factor);
-                UpdateFromCfg(localModules.Where(a => a.GetValue("name") == modType.FullName).FirstOrDefault(), mod, baseMod, factor);
-                if (modType.FullName != modType.Name)
-                {
-                    UpdateFromCfg(GetConfig(modType.Name), mod, baseMod, factor);
-                    UpdateFromCfg(localModules.Where(a => a.GetValue("name") == modType.Name).FirstOrDefault(), mod, baseMod, factor);
-                }
+                UpdateFromCfgs(v, mod, baseMod, factor);
             }
         }
     }

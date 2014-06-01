@@ -70,6 +70,7 @@
   <ItemGroup>
     <Compile Include="Checker.cs" />
     <Compile Include="ExtensionMethods.cs" />
+    <Compile Include="FieldChanger.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="MFT_Updaters.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
