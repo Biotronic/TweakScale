@@ -227,7 +227,7 @@ namespace TweakScale
             if (f1 == null)
                 return;
 
-            var name = cfg.GetValue("name");
+            var name = cfg.HasValue("name") ? cfg.GetValue("name") : "*";
 
             if (f1.FieldType.GetInterface("IEnumerable") != null)
             {
@@ -277,7 +277,7 @@ namespace TweakScale
                     UpdateModule(value, mod, baseMod, factor);
                 }
 
-                foreach (ConfigNode node in cfg.nodes.OfType<ConfigNode>().Where(a=>a.HasValue("name")))
+                foreach (ConfigNode node in cfg.nodes.OfType<ConfigNode>())
                 {
                     UpdateSubItem(node, mod, baseMod, factor);
                 }
