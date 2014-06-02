@@ -48,7 +48,7 @@ namespace TweakScale
             return result;
         }
 
-        public static void LogErrorMessageF(string format, params object[] args)
+        public static void Logf(string format, params object[] args)
         {
             MonoBehaviour.print(string.Format(format, args));
         }
@@ -74,7 +74,7 @@ namespace TweakScale
             }
             catch (InvalidCastException)
             {
-                LogErrorMessageF("Failed to convert string value \"{0}\" to type {1}", cfgValue, typeof(T).Name);
+                Logf("Failed to convert string value \"{0}\" to type {1}", cfgValue, typeof(T).Name);
                 return defaultValue;
             }
         }
@@ -92,7 +92,7 @@ namespace TweakScale
             }
             catch (InvalidCastException)
             {
-                LogErrorMessageF("Failed to convert string value \"{0}\" to type {1}", cfgValue, typeof(T).Name);
+                Logf("Failed to convert string value \"{0}\" to type {1}", cfgValue, typeof(T).Name);
                 return defaultValue;
             }
         }
@@ -105,7 +105,7 @@ namespace TweakScale
             }
             catch (InvalidCastException)
             {
-                LogErrorMessageF("Failed to convert string value \"{0}\" to type {1}", value, typeof(T[]).Name);
+                Logf("Failed to convert string value \"{0}\" to type {1}", value, typeof(T[]).Name);
                 return defaultValue;
             }
         }

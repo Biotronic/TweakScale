@@ -68,7 +68,7 @@ namespace TweakScale
         [KSPField(isPersistant = true)]
         public Vector3 defaultTransformScale = new Vector3(0f, 0f, 0f);
 
-        private IEnumerable<IRescalable> updaters;
+        private IRescalable[] updaters;
 
         /// <summary>
         /// The ConfigNode that belongs to the part this module affects.
@@ -166,7 +166,7 @@ namespace TweakScale
             }
             basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
 
-            updaters = TweakScaleUpdater.createUpdaters(part);
+            updaters = TweakScaleUpdater.createUpdaters(part).ToArray();
 
             SetupFromConfig(new ScaleConfig(moduleNode));
 
@@ -234,7 +234,6 @@ namespace TweakScale
         {
             if (defaultTransformScale.x == 0.0f)
             {
-                print(String.Format("Setting defaultTransformScale to {0} {1} {2}", part.transform.GetChild(0).localScale.x, part.transform.GetChild(0).localScale.y, part.transform.GetChild(0).localScale.z));
                 defaultTransformScale = part.transform.GetChild(0).localScale;
             }
 
@@ -261,6 +260,23 @@ namespace TweakScale
                     }
                 }
             };
+        }
+
+        private void updateBySurfaceArea(ScalingFactor factor) // values that change relative to the surface area (i.e. scale squared)
+        {
+            if (basePart.breakingForce == 22f) // not defined in the config, set to a reasonable default
+                part.breakingForce = 32.0f * factor.absolute.quadratic; // scale 1 = 50, scale 2 = 200, etc.
+            else // is defined, scale it relative to new surface area
+                part.breakingForce = basePart.breakingForce * factor.absolute.quadratic;
+            if (part.breakingForce < 22f)
+                part.breakingForce = 22f;
+
+            if (basePart.breakingTorque == 22f)
+                part.breakingTorque = 32.0f * factor.absolute.quadratic;
+            else
+                part.breakingTorque = basePart.breakingTorque * factor.absolute.quadratic;
+            if (part.breakingTorque < 22f)
+                part.breakingTorque = 22f;
         }
 
         private void updateByRelativeVolume(ScalingFactor factor) // values that change relative to the volume (i.e. scale cubed)

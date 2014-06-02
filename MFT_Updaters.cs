@@ -2,7 +2,6 @@
 
 namespace TweakScale
 {
-
     // For new-style (>v4.3) Real Fuels and Modular Fuel Tanks.
     class TweakScaleRealFuelUpdater : TweakScaleUpdater
     {

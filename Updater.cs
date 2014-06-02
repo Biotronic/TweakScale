@@ -46,8 +46,8 @@ namespace TweakScale
         {
             // Initialize above array.
             // Modular Fuel Tanks/Real Fuels:
-            //ctors["ModularFuelTanks.ModuleFuelTanks"] = a => new TweakScaleModularFuelTanks4_3Updater(a);
-            //ctors["RealFuels.ModuleFuelTanks"] = a => new TweakScaleRealFuelUpdater(a);
+            ctors["ModularFuelTanks.ModuleFuelTanks"] = a => new TweakScaleModularFuelTanks4_3Updater(a);
+            ctors["RealFuels.ModuleFuelTanks"] = a => new TweakScaleRealFuelUpdater(a);
         }
 
         /// <summary>
@@ -197,12 +197,12 @@ namespace TweakScale
 
             if (val == null)
             {
-                Tools.LogErrorMessageF("Non-existent Member {0} for PartModule type {1}", value.name, modType.FullName);
+                Tools.Logf("Non-existent Member {0} for PartModule type {1}", value.name, modType.FullName);
                 return;
             }
             if (val.MemberType != typeof(float) && val.MemberType != typeof(double))
             {
-                Tools.LogErrorMessageF("Member {0} for PartModule type {1} is of type {2}. Required: float or double", value.name, modType.FullName, val.MemberType.FullName);
+                Tools.Logf("Member {0} for PartModule type {1} is of type {2}. Required: float or double", value.name, modType.FullName, val.MemberType.FullName);
                 return;
             }
 
@@ -216,7 +216,7 @@ namespace TweakScale
                 }
                 else
                 {
-                    Tools.LogErrorMessageF("Can't set value from array: Index out of bounds: {0}.", factor.index);
+                    Tools.Logf("Can't set value from array: Index out of bounds: {0}.", factor.index);
                 }
             }
             else
@@ -224,7 +224,7 @@ namespace TweakScale
                 double exp;
                 if (!double.TryParse(value.value, out exp))
                 {
-                    Tools.LogErrorMessageF("Invalid value for exponent {0}: \"{1}\"", value.name, value.value);
+                    Tools.Logf("Invalid value for exponent {0}: \"{1}\"", value.name, value.value);
                     return;
                 }
                 var newValue = baseVal.Value;
