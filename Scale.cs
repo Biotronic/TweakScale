@@ -247,7 +247,7 @@ namespace TweakScale
                     .Where(a => a.id == node.id)
                     .ToArray();
                 var idIdx = Array.FindIndex(nodesWithSameId, a => a == node);
-                var baseNodesWithSameId = part.attachNodes
+                var baseNodesWithSameId = basePart.attachNodes
                     .Where(a => a.id == node.id)
                     .ToArray();
                 if (idIdx < baseNodesWithSameId.Length)
