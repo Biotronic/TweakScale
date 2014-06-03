@@ -215,7 +215,7 @@ namespace TweakScale
         private void moveNode(AttachNode node, AttachNode baseNode, ScalingFactor factor, bool movePart)
         {
             Vector3 oldPosition = node.position;
-            node.position *= factor.relative.linear;
+            node.position = baseNode.position * factor.absolute.linear;
             if (movePart && node.attachedPart != null)
             {
                 if (node.attachedPart == part.parent)
@@ -237,19 +237,35 @@ namespace TweakScale
                 defaultTransformScale = part.transform.GetChild(0).localScale;
             }
 
-            Vector3 rescaleVector = Vector3.one * factor.absolute.linear;
-
             savedScale = part.transform.GetChild(0).localScale = factor.absolute.linear * defaultTransformScale;
             part.transform.GetChild(0).hasChanged = true;
             part.transform.hasChanged = true;
 
             foreach (AttachNode node in part.attachNodes)
             {
-                moveNode(node, basePart.findAttachNode(node.id), factor, moveParts);
+                var nodesWithSameId = part.attachNodes
+                    .Where(a => a.id == node.id)
+                    .ToArray();
+                var idIdx = Array.FindIndex(nodesWithSameId, a => a == node);
+                var baseNodesWithSameId = part.attachNodes
+                    .Where(a => a.id == node.id)
+                    .ToArray();
+                if (idIdx < baseNodesWithSameId.Length)
+                {
+                    var baseNode = baseNodesWithSameId[idIdx];
+
+                    moveNode(node, baseNode, factor, moveParts);
+                }
+                else
+                {
+                    Tools.Logf("Error scaling part. Node {0} does not have counterpart in base part.", node.id);
+                }
             }
-                
+
             if (part.srfAttachNode != null)
+            {
                 moveNode(part.srfAttachNode, basePart.srfAttachNode, factor, moveParts);
+            }
             if (moveParts)
             {
                 Vector3 relativeVector = Vector3.one * factor.absolute.linear;

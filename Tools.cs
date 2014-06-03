@@ -72,10 +72,14 @@ namespace TweakScale
                 var result = (T)Convert.ChangeType(cfgValue, typeof(T));
                 return result;
             }
-            catch (InvalidCastException)
+            catch (Exception ex)
             {
-                Logf("Failed to convert string value \"{0}\" to type {1}", cfgValue, typeof(T).Name);
-                return defaultValue;
+                if (ex is InvalidCastException || ex is FormatException || ex is OverflowException || ex is ArgumentNullException)
+                {
+                    Logf("Failed to convert string value \"{0}\" to type {1}", cfgValue, typeof(T).Name);
+                    return defaultValue;
+                }
+                throw;
             }
         }
 
@@ -85,16 +89,7 @@ namespace TweakScale
             {
                 return defaultValue;
             }
-            string cfgValue = config.GetValue(name);
-            try
-            {
-                return cfgValue.Split(',').Select(a => (T)Convert.ChangeType(a, typeof(T))).ToArray();
-            }
-            catch (InvalidCastException)
-            {
-                Logf("Failed to convert string value \"{0}\" to type {1}", cfgValue, typeof(T).Name);
-                return defaultValue;
-            }
+            return ConvertString<T>(config.GetValue(name), defaultValue);
         }
 
         public static T[] ConvertString<T>(string value, T[] defaultValue)
@@ -103,10 +98,14 @@ namespace TweakScale
             {
                 return value.Split(',').Select(a => (T)Convert.ChangeType(a, typeof(T))).ToArray();
             }
-            catch (InvalidCastException)
+            catch (Exception ex)
             {
-                Logf("Failed to convert string value \"{0}\" to type {1}", value, typeof(T[]).Name);
-                return defaultValue;
+                if (ex is InvalidCastException || ex is FormatException || ex is OverflowException || ex is ArgumentNullException)
+                {
+                    Logf("Failed to convert string value \"{0}\" to type {1}", value, typeof(T).Name);
+                    return defaultValue;
+                }
+                throw;
             }
         }
     }
