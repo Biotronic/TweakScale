@@ -212,10 +212,10 @@ namespace TweakScale
             base.OnSave(node);
         }
 
-        private void moveNode(AttachNode node, AttachNode baseNode, Vector3 rescaleVector, bool movePart)
+        private void moveNode(AttachNode node, AttachNode baseNode, ScalingFactor factor, bool movePart)
         {
             Vector3 oldPosition = node.position;
-            node.position = Vector3.Scale(baseNode.position, rescaleVector);
+            node.position *= factor.relative.linear;
             if (movePart && node.attachedPart != null)
             {
                 if (node.attachedPart == part.parent)
@@ -244,9 +244,12 @@ namespace TweakScale
             part.transform.hasChanged = true;
 
             foreach (AttachNode node in part.attachNodes)
-                moveNode(node, basePart.findAttachNode(node.id), rescaleVector, moveParts);
+            {
+                moveNode(node, basePart.findAttachNode(node.id), factor, moveParts);
+            }
+                
             if (part.srfAttachNode != null)
-                moveNode(part.srfAttachNode, basePart.srfAttachNode, rescaleVector, moveParts);
+                moveNode(part.srfAttachNode, basePart.srfAttachNode, factor, moveParts);
             if (moveParts)
             {
                 Vector3 relativeVector = Vector3.one * factor.absolute.linear;
