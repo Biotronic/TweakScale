@@ -1,38 +1,24 @@
 ﻿using System;
+using System.Linq;
+using TweakScale;
 
-namespace TweakScale
+namespace TweakScale_ModularFuelTanks
 {
-    // For new-style (>v4.3) Real Fuels and Modular Fuel Tanks.
-    class TweakScaleRealFuelUpdater : TweakScaleUpdater
+    [KSPAddon(KSPAddon.Startup.EditorAny, false)]
+    internal class MyEditorRegistrationAddon : TweakScale.RescalableRegistratorAddon
     {
-        public TweakScaleRealFuelUpdater(PartModule pm)
-            : base(pm)
+        public override void OnStart()
         {
+            TweakScale.TweakScaleUpdater.RegisterUpdater((ModularFuelTanks.ModuleFuelTanks mod) => new TweakScaleModularFuelTanks4_3Updater(mod));
         }
+    }
 
-        RealFuels.ModuleFuelTanks module
+    [KSPAddon(KSPAddon.Startup.Flight, false)]
+    internal class MyFlightRegistrationAddon : TweakScale.RescalableRegistratorAddon
+    {
+        public override void OnStart()
         {
-            get
-            {
-                return (RealFuels.ModuleFuelTanks)_module;
-            }
-        }
-
-        override public void OnRescale(ScalingFactor factor)
-        {
-            var baseModule = GetBaseModule<RealFuels.ModuleFuelTanks>();
-            module.basemass = baseModule.basemass * factor.absolute.cubic;
-            module.basemassPV = baseModule.basemassPV * factor.absolute.cubic;
-            module.volume = baseModule.volume * factor.absolute.cubic;
-            try
-            {
-                module.UpdateMass();
-            }
-            catch (Exception)
-            {
-                // Just silently ignore this one...
-                // I have a reason: this is the only module that seems to misbehave when scaled too early.
-            }
+            TweakScale.TweakScaleUpdater.RegisterUpdater((ModularFuelTanks.ModuleFuelTanks mod) => new TweakScaleModularFuelTanks4_3Updater(mod));
         }
     }
 

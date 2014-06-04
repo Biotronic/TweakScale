@@ -42,13 +42,6 @@ namespace TweakScale
     {
         // Every kind of updater is registered here, and the correct kind of updater is created for each PartModule.
         static Dictionary<string, Func<PartModule, IRescalable>> ctors = new Dictionary<string, Func<PartModule, IRescalable>>();
-        static TweakScaleUpdater()
-        {
-            // Initialize above array.
-            // Modular Fuel Tanks/Real Fuels:
-            ctors["ModularFuelTanks.ModuleFuelTanks"] = a => new TweakScaleModularFuelTanks4_3Updater(a);
-            ctors["RealFuels.ModuleFuelTanks"] = a => new TweakScaleRealFuelUpdater(a);
-        }
 
         /// <summary>
         /// Registers an updater for partmodules the name <paramref name="moduleName"/>.
