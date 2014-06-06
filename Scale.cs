@@ -139,8 +139,11 @@ namespace TweakScale
             isFreeScale = config.isFreeScale;
             massFactors = config.massFactors;
             defaultScale = config.defaultScale;
+            this.Fields["tweakScale"].guiActiveEditor = false;
+            this.Fields["tweakName"].guiActiveEditor = false;
             if (isFreeScale)
             {
+                this.Fields["tweakScale"].guiActiveEditor = true;
                 var range = (UI_FloatEdit)this.Fields["tweakScale"].uiControlEditor;
                 range.minValue = config.minValue;
                 range.maxValue = config.maxValue;
@@ -148,14 +151,13 @@ namespace TweakScale
                 range.incrementSmall = (float)Math.Round(range.incrementLarge / 10, 2);
                 this.Fields["tweakScale"].guiUnits = config.suffix;
             }
-            else
+            else if (config.scaleFactors.Length > 1)
             {
+                this.Fields["tweakName"].guiActiveEditor = true;
                 var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
                 scaleFactors = config.scaleFactors;
                 options.options = config.scaleNames;
             }
-            this.Fields["tweakScale"].guiActiveEditor = isFreeScale;
-            this.Fields["tweakName"].guiActiveEditor = !isFreeScale;
         }
 
         protected virtual void Setup()
