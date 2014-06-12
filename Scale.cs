@@ -48,6 +48,9 @@ namespace TweakScale
 
         [KSPField(isPersistant = true)]
         public float defaultScale = -1;
+        
+        [KSPField(isPersistant = true)]
+        public int defaultName = -1;
 
         [KSPField(isPersistant = true)]
         public bool isFreeScale = false;
@@ -177,14 +180,14 @@ namespace TweakScale
                 tweakScale = currentScale = defaultScale;
                 if (!isFreeScale)
                 {
-                    tweakName = Tools.ClosestIndex(defaultScale, scaleFactors);
+                    tweakName = defaultName = Tools.ClosestIndex(defaultScale, scaleFactors);
                 }
             }
             else
             {
                 if (!isFreeScale)
                 {
-                    tweakName = Tools.ClosestIndex(tweakScale, scaleFactors);
+                    tweakName = defaultName = Tools.ClosestIndex(tweakScale, scaleFactors);
                 }
                 updateByWidth(scalingFactor, false);
                 part.mass = basePart.mass * scalingFactor.absolute.cubic;
@@ -225,8 +228,15 @@ namespace TweakScale
                 else
                     node.attachedPart.transform.Translate(node.position - oldPosition, part.transform);
             }
-
-            node.size = (int)(baseNode.size + (tweakScale - defaultScale) / (maxSize - minSize) * 5);
+            if (isFreeScale)
+            {
+                node.size = (int)(baseNode.size + (tweakScale - defaultScale) / (maxSize - minSize) * 5);
+            }
+            else
+            {
+                var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
+                node.size = (int)(baseNode.size + (tweakName - defaultName) / (float)options.options.Length * 5);
+            }
             if (node.size < 0) node.size = 0;
             node.breakingForce = part.breakingForce;
             node.breakingTorque = part.breakingTorque;
