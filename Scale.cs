@@ -190,7 +190,7 @@ namespace TweakScale
                     tweakName = defaultName = Tools.ClosestIndex(tweakScale, scaleFactors);
                 }
                 updateByWidth(scalingFactor, false);
-                part.mass = basePart.mass * scalingFactor.absolute.cubic;
+                part.mass = part.mass * massFactors.Select((a, i) => (float)Math.Pow(a * scalingFactor.absolute.linear, i + 1)).Sum();
             }
 
             foreach (var updater in updaters)
