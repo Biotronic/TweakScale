@@ -5,13 +5,29 @@ using UnityEngine;
 
 namespace TweakScale
 {
+    /// <summary>
+    /// Various handy functions.
+    /// </summary>
     static class Tools
     {
+        /// <summary>
+        /// Clamps the value <paramref name="x"/> between <paramref name="min"/> and <paramref name="max"/>.
+        /// </summary>
+        /// <param name="x">The value to start out with.</param>
+        /// <param name="min">The minimum value to clamp to.</param>
+        /// <param name="max">The maximum value to clamp to.</param>
+        /// <returns>The value closest to <paramref name="x"/> that's no less than <paramref name="min"/> and no more than <paramref name="max"/>.</returns>
         public static float clamp(float x, float min, float max)
         {
             return x < min ? min : x > max ? max : x;
         }
 
+        /// <summary>
+        /// Gets the value in <paramref name="values"/> that's closest to <paramref name="x"/>.
+        /// </summary>
+        /// <param name="x">The value to find.</param>
+        /// <param name="values">The values to look through.</param>
+        /// <returns>The value in <paramref name="values"/> that's closest to <paramref name="x"/>.</returns>
         public static float Closest(float x, IEnumerable<float> values)
         {
             var minDistance = float.PositiveInfinity;
@@ -28,6 +44,12 @@ namespace TweakScale
             return result;
         }
 
+        /// <summary>
+        /// Finds the index of the value in <paramref name="value"/> that's closest to <paramref name="x"/>.
+        /// </summary>
+        /// <param name="x">The value to find.</param>
+        /// <param name="values">The values to look through.</param>
+        /// <returns>The index of the value in <paramref name="value"/> that's closest to <paramref name="x"/>.</returns>
         public static int ClosestIndex(float x, IEnumerable<float> values)
         {
             var minDistance = float.PositiveInfinity;
@@ -48,6 +70,11 @@ namespace TweakScale
             return result;
         }
 
+        /// <summary>
+        /// Writes a log message to output_log.txt.
+        /// </summary>
+        /// <param name="format">The format string.</param>
+        /// <param name="args">The arguments to the format.</param>
         public static void Logf(string format, params object[] args)
         {
             MonoBehaviour.print(string.Format(format, args));
@@ -69,7 +96,7 @@ namespace TweakScale
             string cfgValue = config.GetValue(name);
             try
             {
-                var result = (T)Convert.ChangeType(cfgValue, typeof(T));
+                var result = ConvertEx.ChangeType<T>(cfgValue);
                 return result;
             }
             catch (Exception ex)
@@ -83,6 +110,14 @@ namespace TweakScale
             }
         }
 
+        /// <summary>
+        /// Fetches the the comma-delimited string value by the name <paramref name="name"/> from the node <paramref name="config"/> and converts it into an array of <typeparamref name="T"/>s.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="config">The node to fetch values from.</param>
+        /// <param name="name">The name of the value to fetch.</param>
+        /// <param name="defaultValue">The value to return if the value does not exist, or cannot be converted to <typeparamref name="T"/>s.</param>
+        /// <returns>An array containing the elements of the string value as <typeparamref name="T"/>s.</returns>
         public static T[] ConfigValue<T>(ConfigNode config, string name, T[] defaultValue)
         {
             if (!config.HasValue(name))
@@ -92,11 +127,18 @@ namespace TweakScale
             return ConvertString<T>(config.GetValue(name), defaultValue);
         }
 
+        /// <summary>
+        /// Converts a comma-delimited string into an array of <typeparamref name="T"/>s.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value">A comma-delimited list of values.</param>
+        /// <param name="defaultValue">The value to return if the list does not hold valid values.</param>
+        /// <returns>An arra</returns>
         public static T[] ConvertString<T>(string value, T[] defaultValue)
         {
             try
             {
-                return value.Split(',').Select(a => (T)Convert.ChangeType(a, typeof(T))).ToArray();
+                return value.Split(',').Select(a => ConvertEx.ChangeType<T>(a)).ToArray();
             }
             catch (Exception ex)
             {

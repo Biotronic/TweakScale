@@ -3,19 +3,35 @@ using System.Reflection;
 
 namespace TweakScale
 {
+    /// <summary>
+    /// Wraps a FieldInfo or PropertyInfo and provides a common interface for either.
+    /// </summary>
+    /// <typeparam name="T">Pretend the field/property is this type.</typeparam>
     public abstract class MemberChanger<T>
     {
+        /// <summary>
+        /// Get or set the value of the field/property.
+        /// </summary>
         public abstract T Value
         {
             get;
             set;
         }
 
+        /// <summary>
+        /// The actual type of the field/property.
+        /// </summary>
         public abstract Type MemberType
         {
             get;
         }
 
+        /// <summary>
+        /// Creates a wrapper for the field or property by the specified name.
+        /// </summary>
+        /// <param name="obj">The object that holds the member to wrap.</param>
+        /// <param name="name">The name of the member.</param>
+        /// <returns>The member, wrapped.</returns>
         public static MemberChanger<T> CreateFromName(object obj, string name)
         {
             var field = obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Public);
@@ -33,6 +49,10 @@ namespace TweakScale
         }
     }
 
+    /// <summary>
+    /// Wraps a FieldInfo.
+    /// </summary>
+    /// <typeparam name="T">Pretend the field is this type.</typeparam>
     class FieldChanger<T> : MemberChanger<T>
     {
         private FieldInfo fi;
@@ -40,15 +60,18 @@ namespace TweakScale
 
         public FieldChanger(object o, FieldInfo f)
         {
-            fi = f;
-            obj = o;
+            if (f.FieldType.GetInterface("IConvertible") != null)
+            {
+                fi = f;
+                obj = o;
+            }
         }
 
         public override T Value
         {
             get
             {
-                return (T)Convert.ChangeType(fi.GetValue(obj), typeof(T));
+                return ConvertEx.ChangeType<T>(fi.GetValue(obj));
             }
             set
             {
@@ -65,6 +88,10 @@ namespace TweakScale
         }
     }
 
+    /// <summary>
+    /// Wraps a PropertyInfo.
+    /// </summary>
+    /// <typeparam name="T">Pretend the property is this type.</typeparam>
     class PropertyChanger<T> : MemberChanger<T>
     {
         private PropertyInfo pi;
@@ -72,15 +99,18 @@ namespace TweakScale
 
         public PropertyChanger(object o, PropertyInfo p)
         {
-            pi = p;
-            obj = o;
+            if (p.PropertyType.GetInterface("IConvertible") != null)
+            {
+                pi = p;
+                obj = o;
+            }
         }
 
         public override T Value
         {
             get
             {
-                return (T)Convert.ChangeType(pi.GetValue(obj, null), typeof(T));
+                return ConvertEx.ChangeType<T>(pi.GetValue(obj, null));
             }
             set
             {

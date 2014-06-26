@@ -18,6 +18,9 @@ using UnityEngine;
 
 namespace TweakScale
 {
+    /// <summary>
+    /// Converts from Gaius' GoodspeedTweakScale to updated TweakScale.
+    /// </summary>
     public class GoodspeedTweakScale : TweakScale
     {
         private bool updated = false;
@@ -32,46 +35,87 @@ namespace TweakScale
             }
         }
     }
-
     public class TweakScale : PartModule
     {
+        /// <summary>
+        /// The selected scale. Different from currentScale only for a single update, where currentScale is set to match this.
+        /// </summary>
         [KSPField(isPersistant = true, guiActiveEditor = true, guiName = "Scale", guiFormat = "S4", guiUnits = "m")]
         [UI_FloatEdit(scene = UI_Scene.Editor, minValue = 0.625f, maxValue = 5, incrementLarge = 1.25f, incrementSmall = 0.125f, incrementSlide = 0.001f)]
         public float tweakScale = 1;
 
+        /// <summary>
+        /// Index into scale values array.
+        /// </summary>
         [KSPField(isPersistant = false, guiActiveEditor = true, guiName = "Scale")]
         [UI_ChooseOption(scene = UI_Scene.Editor)]
         public int tweakName = 0;
 
+        /// <summary>
+        /// The scale to which the part currently is scaled.
+        /// </summary>
         [KSPField(isPersistant = true)]
         public float currentScale = -1;
 
+        /// <summary>
+        /// The default scale, i.e. the number by which to divide tweakScale and currentScale to get the relative size difference from when the part is used without TweakScale.
+        /// </summary>
         [KSPField(isPersistant = true)]
         public float defaultScale = -1;
         
+        /// <summary>
+        /// The default index into scale values array. Mostly same as above.
+        /// </summary>
         [KSPField(isPersistant = true)]
         public int defaultName = -1;
 
+        /// <summary>
+        /// Whether the part should be freely scalable or limited to a list of allowed values.
+        /// </summary>
         [KSPField(isPersistant = true)]
         public bool isFreeScale = false;
 
+        /// <summary>
+        /// The version of TweakScale last used to change this part. Intended for use in the case of non-backward-compatible changes.
+        /// </summary>
         [KSPField(isPersistant = true)]
-        public int version = 0;
+        public string version;
 
-        private static int currentVersion = 1;
-
+        /// <summary>
+        /// The scale value array. If isFreeScale is false, the part may only be one of these scales.
+        /// </summary>
         protected float[] scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
 
-        private float[] massFactors = { 0.0f, 0.0f, 1.0f };
+        /// <summary>
+        /// The unmodified prefab part. From this, default values are found.
+        /// </summary>
+        private Part prefabPart;
 
-        private Part basePart;
-
+        /// <summary>
+        /// Like currentScale above, this is the current scale vector. If TweakScale supports non-uniform scaling in the future (e.g. changing only the length of a booster), savedScale may represent such a scaling, while currentScale won't.
+        /// </summary>
         private Vector3 savedScale;
 
+        /// <summary>
+        /// The value by which the part is scaled by default. When a part uses MODEL { scale = ... }, this will be different from (1,1,1).
+        /// </summary>
         [KSPField(isPersistant = true)]
         public Vector3 defaultTransformScale = new Vector3(0f, 0f, 0f);
 
+        /// <summary>
+        /// Updaters for different PartModules.
+        /// </summary>
         private IRescalable[] updaters;
+
+        /// <summary>
+        /// Whether this instance of TweakScale is the first. If not, log an error and make sure the TweakScale modules don't harmfully interact.
+        /// </summary>
+        private bool duplicate = false;
+
+        /// <summary>
+        /// The Config for this part.
+        /// </summary>
+        private ScaleConfig config;
 
         /// <summary>
         /// The ConfigNode that belongs to the part this module affects.
@@ -92,10 +136,13 @@ namespace TweakScale
         {
             get
             {
-                return PartNode.GetNodes("MODULE").Single(n => n.GetValue("name") == moduleName);
+                return PartNode.GetNodes("MODULE").FirstOrDefault(n => n.GetValue("name") == moduleName);
             }
         }
 
+        /// <summary>
+        /// The current scaling factor.
+        /// </summary>
         private ScalingFactor scalingFactor
         {
             get
@@ -104,6 +151,9 @@ namespace TweakScale
             }
         }
 
+        /// <summary>
+        /// The smallest scale the part can be.
+        /// </summary>
         private float minSize
         {
             get
@@ -120,6 +170,9 @@ namespace TweakScale
             }
         }
 
+        /// <summary>
+        /// The largest scale the part can be.
+        /// </summary>
         private float maxSize
         {
             get
@@ -136,11 +189,13 @@ namespace TweakScale
             }
         }
 
+        /// <summary>
+        /// Loads settings from <paramref name="config"/>.
+        /// </summary>
+        /// <param name="config">The settings to use.</param>
         private void SetupFromConfig(ScaleConfig config)
         {
-
             isFreeScale = config.isFreeScale;
-            massFactors = config.massFactors;
             defaultScale = config.defaultScale;
             this.Fields["tweakScale"].guiActiveEditor = false;
             this.Fields["tweakName"].guiActiveEditor = false;
@@ -163,17 +218,20 @@ namespace TweakScale
             }
         }
 
+        /// <summary>
+        /// Sets up values from config, creates updaters, and sets up initial values.
+        /// </summary>
         protected virtual void Setup()
         {
             if (part.partInfo == null)
             {
                 return;
             }
-            basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
+            prefabPart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
 
             updaters = TweakScaleUpdater.createUpdaters(part).ToArray();
 
-            SetupFromConfig(new ScaleConfig(moduleNode));
+            SetupFromConfig(config = new ScaleConfig(moduleNode));
 
             if (currentScale < 0f)
             {
@@ -190,7 +248,6 @@ namespace TweakScale
                     tweakName = defaultName = Tools.ClosestIndex(tweakScale, scaleFactors);
                 }
                 updateByWidth(scalingFactor, false);
-                part.mass = part.mass * massFactors.Select((a, i) => (float)Math.Pow(a * scalingFactor.absolute.linear, i + 1)).Sum();
             }
 
             foreach (var updater in updaters)
@@ -213,10 +270,17 @@ namespace TweakScale
 
         public override void OnSave(ConfigNode node)
         {
-            version = currentVersion;
+            version = this.GetType().Assembly.GetName().Version.ToString();
             base.OnSave(node);
         }
 
+        /// <summary>
+        /// Moves <paramref name="node"/> to reflect the new scale. If <paramref name="movePart"/> is true, also moves attached parts.
+        /// </summary>
+        /// <param name="node">The node to move.</param>
+        /// <param name="baseNode">The same node, as found on the prefab part.</param>
+        /// <param name="factor">The factor by which to modify the node's location.</param>
+        /// <param name="movePart">Whether or not to move attached parts.</param>
         private void moveNode(AttachNode node, AttachNode baseNode, ScalingFactor factor, bool movePart)
         {
             Vector3 oldPosition = node.position;
@@ -237,11 +301,17 @@ namespace TweakScale
                 var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
                 node.size = (int)(baseNode.size + (tweakName - defaultName) / (float)options.options.Length * 5);
             }
-            if (node.size < 0) node.size = 0;
-            node.breakingForce = part.breakingForce;
-            node.breakingTorque = part.breakingTorque;
+            if (node.size < 0)
+            {
+                node.size = 0;
+            }
         }
 
+        /// <summary>
+        /// Updates properties that change linearly with scale.
+        /// </summary>
+        /// <param name="factor">The factor by which to modify properties</param>
+        /// <param name="moveParts">Whether or not to move attached parts.</param>
         private void updateByWidth(ScalingFactor factor, bool moveParts)
         {
             if (defaultTransformScale.x == 0.0f)
@@ -259,7 +329,7 @@ namespace TweakScale
                     .Where(a => a.id == node.id)
                     .ToArray();
                 var idIdx = Array.FindIndex(nodesWithSameId, a => a == node);
-                var baseNodesWithSameId = basePart.attachNodes
+                var baseNodesWithSameId = prefabPart.attachNodes
                     .Where(a => a.id == node.id)
                     .ToArray();
                 if (idIdx < baseNodesWithSameId.Length)
@@ -276,44 +346,55 @@ namespace TweakScale
 
             if (part.srfAttachNode != null)
             {
-                moveNode(part.srfAttachNode, basePart.srfAttachNode, factor, moveParts);
+                moveNode(part.srfAttachNode, prefabPart.srfAttachNode, factor, moveParts);
             }
             if (moveParts)
             {
-                Vector3 relativeVector = Vector3.one * factor.absolute.linear;
                 foreach (Part child in part.children)
                 {
                     if (child.srfAttachNode != null && child.srfAttachNode.attachedPart == part) // part is attached to us, but not on a node
                     {
                         Vector3 attachedPosition = child.transform.localPosition + child.transform.localRotation * child.srfAttachNode.position;
-                        Vector3 targetPosition = Vector3.Scale(attachedPosition, relativeVector);
+                        Vector3 targetPosition = attachedPosition * factor.absolute.linear;
                         child.transform.Translate(targetPosition - attachedPosition, part.transform);
                     }
                 }
             };
         }
 
+        /// <summary>
+        /// Updates properties that change with the square of the scale. i.e. surface area.
+        /// </summary>
+        /// <param name="factor">The factor by which to modify properties</param>
         private void updateBySurfaceArea(ScalingFactor factor) // values that change relative to the surface area (i.e. scale squared)
         {
-            if (basePart.breakingForce == 22f) // not defined in the config, set to a reasonable default
+            if (prefabPart.breakingForce == 22f) // not defined in the config, set to a reasonable default
                 part.breakingForce = 32.0f * factor.absolute.quadratic; // scale 1 = 50, scale 2 = 200, etc.
             else // is defined, scale it relative to new surface area
-                part.breakingForce = basePart.breakingForce * factor.absolute.quadratic;
+                part.breakingForce = prefabPart.breakingForce * factor.absolute.quadratic;
             if (part.breakingForce < 22f)
                 part.breakingForce = 22f;
 
-            if (basePart.breakingTorque == 22f)
+            if (prefabPart.breakingTorque == 22f)
                 part.breakingTorque = 32.0f * factor.absolute.quadratic;
             else
-                part.breakingTorque = basePart.breakingTorque * factor.absolute.quadratic;
+                part.breakingTorque = prefabPart.breakingTorque * factor.absolute.quadratic;
             if (part.breakingTorque < 22f)
                 part.breakingTorque = 22f;
+
+            foreach (var node in part.attachNodes)
+            {
+                node.breakingForce = part.breakingForce;
+                node.breakingTorque = part.breakingTorque;
+            }
         }
 
-        private void updateByRelativeVolume(ScalingFactor factor) // values that change relative to the volume (i.e. scale cubed)
+        /// <summary>
+        /// Updates properties that change with the cube of the scale, i.e. the volume.
+        /// </summary>
+        /// <param name="factor">The factor by which to modify properties</param>
+        private void updateByVolume(ScalingFactor factor) // values that change relative to the volume (i.e. scale cubed)
         {
-            part.mass = part.mass * massFactors.Select((a, i) => (float)Math.Pow(a * factor.relative.linear, i + 1)).Sum();
-
             var newResourceValues = part.Resources.OfType<PartResource>().Select(a => new[] { a.amount * factor.relative.cubic, a.maxAmount * factor.relative.cubic }).ToArray();
 
             int idx = 0;
@@ -326,6 +407,9 @@ namespace TweakScale
             }
         }
 
+        /// <summary>
+        /// Whether the part holds any resources (fuel, electricity, etc).
+        /// </summary>
         private bool hasResources
         {
             get
@@ -334,6 +418,9 @@ namespace TweakScale
             }
         }
 
+        /// <summary>
+        /// Marks the right-click window as dirty (i.e. tells it to update).
+        /// </summary>
         private void updateWindow() // redraw the right-click window with the updated stats
         {
             if (!isFreeScale && hasResources)
@@ -351,6 +438,18 @@ namespace TweakScale
 
         public void Update()
         {
+            if (duplicate)
+            {
+                return;
+            }
+            if (this != part.Modules.OfType<TweakScale>().First())
+            {
+                Tools.Logf("Duplicate TweakScale module on part [{0}] {1}", part.partInfo.name, part.partInfo.title);
+                Fields["tweakScale"].guiActiveEditor = false;
+                Fields["tweakName"].guiActiveEditor = false;
+                duplicate = true;
+                return;
+            }
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
             {
                 bool changed = isFreeScale ? tweakScale != currentScale : currentScale != scaleFactors[tweakName];
@@ -362,10 +461,10 @@ namespace TweakScale
                         tweakScale = scaleFactors[tweakName];
                     }
 
-                    updateBySurfaceArea(scalingFactor); // call this first, results are used by updateByWidth
                     updateByWidth(scalingFactor, true);
-                    updateByRelativeVolume(scalingFactor);
-                    updateWindow(); // call this last
+                    updateBySurfaceArea(scalingFactor);
+                    updateByVolume(scalingFactor);
+                    updateWindow();
 
                     currentScale = tweakScale;
                     foreach (var updater in updaters)

@@ -83,11 +83,6 @@ namespace TweakScale
             }
         }
 
-        protected T GetBaseModule<T>()
-        {
-            return BasePart.Modules.OfType<T>().First();
-        }
-
         private TweakScaleUpdater()
         { }
 
@@ -132,19 +127,47 @@ namespace TweakScale
         public abstract void OnRescale(ScalingFactor factor);
     }
 
+    abstract public class TweakScaleUpdater<T> : TweakScaleUpdater where T : PartModule
+    {
+        public TweakScaleUpdater(T pm)
+            : base(pm)
+        {
+        }
+
+        public T Module
+        {
+            get
+            {
+                return _module as T;
+            }
+        }
+
+        public T BaseModule
+        {
+            get
+            {
+                return BasePart.Modules.OfType<T>().First();
+            }
+        }
+    }
+
+    /// <summary>
+    /// This class updates fields and properties that are mentioned in TWEAKSCALEEXPONENTS blocks in .cfgs.
+    /// It does this by looking up the field or property by name through reflection, and scales the value stored in the base part (i.e. prefab).
+    /// </summary>
     class TSGenericUpdater : IRescalable
     {
         Part _part;
         Part _basePart;
         TweakScale _ts;
-        ConfigNode[] _localModules;
+        ConfigNode[] _localExponents;
 
         public TSGenericUpdater(Part part)
         {
             _part = part;
             _basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
             _ts = part.Modules.OfType<TweakScale>().First();
-            _localModules = _ts.moduleNode.GetNodes("MODULE");
+            _localExponents = _ts.moduleNode.GetNodes("TWEAKSCALEEXPONENTS");
         }
 
         private IEnumerable<ConfigNode> GetConfigs()
@@ -153,7 +176,7 @@ namespace TweakScale
             {
                 yield return node;
             }
-            foreach (var node in _localModules.Where(a => !a.HasValue("name")))
+            foreach (var node in _localExponents.Where(a => !a.HasValue("name")))
             {
                 yield return node;
             }
@@ -167,7 +190,7 @@ namespace TweakScale
                 {
                     yield return node;
                 }
-                foreach (var node in _localModules.Where(a => a.GetValue("name") == name))
+                foreach (var node in _localExponents.Where(a => a.GetValue("name") == name))
                 {
                     yield return node;
                 }
@@ -201,11 +224,11 @@ namespace TweakScale
 
             if (value.value.Contains(","))
             {
-                var values = value.value.Split(',').Select(a => (double)Convert.ChangeType(a, typeof(double))).ToArray();
+                var values = value.value.Split(',').Select(a => ConvertEx.ChangeType<double>(a)).ToArray();
 
                 if (values.Length >= factor.index || factor.index < 0)
                 {
-                    val.Value =values[factor.index];
+                    val.Value = values[factor.index];
                 }
                 else
                 {

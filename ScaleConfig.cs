@@ -2,8 +2,16 @@
 
 namespace TweakScale
 {
+    /// <summary>
+    /// Configuration values for TweakScale.
+    /// </summary>
     class ScaleConfig
     {
+        /// <summary>
+        /// Fetches the scale config with the specified name.
+        /// </summary>
+        /// <param name="name">The name of the config to fetch.</param>
+        /// <returns>The specified config or the default config if none exists by that name.</returns>
         private static ScaleConfig GetScaleConfig(string name)
         {
             var config = GameDatabase.Instance.GetConfigs("SCALETYPE").FirstOrDefault(a => a.name == name);
@@ -16,14 +24,13 @@ namespace TweakScale
         private string[] _scaleNames = { "62.5cm", "1.25m", "2.5m", "3.75m", "5m" };
 
         public bool isFreeScale = false;
-        public float[] massFactors = { 0.0f, 0.0f, 1.0f };
         public string[] techRequired = { "", "", "", "", "" };
         public float minValue = 0.625f;
         public float maxValue = 5.0f;
         public float defaultScale = 1.25f;
         public string suffix = "m";
 
-        private bool hasTech(string techId)
+        private static bool techUnlocked(string techId)
         {
             if (techId == "")
                 return true;
@@ -56,7 +63,7 @@ namespace TweakScale
         {
             get
             {
-                var result = _scaleFactors.ZipFilter(techRequired, hasTech).ToArray();
+                var result = _scaleFactors.ZipFilter(techRequired, techUnlocked).ToArray();
                 return result;
             }
         }
@@ -65,7 +72,7 @@ namespace TweakScale
         {
             get
             {
-                var result = _scaleNames.ZipFilter(techRequired, hasTech).ToArray();
+                var result = _scaleNames.ZipFilter(techRequired, techUnlocked).ToArray();
                 return result;
             }
         }
@@ -81,14 +88,13 @@ namespace TweakScale
                 var type = Tools.ConfigValue(config, "type", "default");
                 var source = GetScaleConfig(type);
 
-                isFreeScale = Tools.ConfigValue(config, "freeScale", defaultValue: source.isFreeScale);
-                massFactors = Tools.ConfigValue(config, "massFactors", defaultValue: source.massFactors);
-                minValue = Tools.ConfigValue(config, "minScale", defaultValue: source.minValue);
-                maxValue = Tools.ConfigValue(config, "maxScale", defaultValue: source.maxValue);
-                suffix = Tools.ConfigValue(config, "suffix", defaultValue: source.suffix);
+                isFreeScale   = Tools.ConfigValue(config, "freeScale",    defaultValue: source.isFreeScale);
+                minValue      = Tools.ConfigValue(config, "minScale",     defaultValue: source.minValue);
+                maxValue      = Tools.ConfigValue(config, "maxScale",     defaultValue: source.maxValue);
+                suffix        = Tools.ConfigValue(config, "suffix",       defaultValue: source.suffix);
                 _scaleFactors = Tools.ConfigValue(config, "scaleFactors", defaultValue: source._scaleFactors);
-                _scaleNames = Tools.ConfigValue(config, "scaleNames", defaultValue: source._scaleNames).Select(a => a.Trim()).ToArray();
-                techRequired = Tools.ConfigValue(config, "techRequired", defaultValue: source.techRequired).Select(a=>a.Trim()).ToArray();
+                _scaleNames   = Tools.ConfigValue(config, "scaleNames",   defaultValue: source._scaleNames).Select(a => a.Trim()).ToArray();
+                techRequired  = Tools.ConfigValue(config, "techRequired", defaultValue: source.techRequired).Select(a=>a.Trim()).ToArray();
 
                 if (_scaleFactors.Length != _scaleNames.Length)
                 {
@@ -114,7 +120,6 @@ namespace TweakScale
             string result = "ScaleConfig {\n";
             result += "	isFreeScale = " + isFreeScale.ToString() + "\n";
             result += "	scaleFactors = " + scaleFactors.ToString() + "\n";
-            result += "	massFactors = " + massFactors.ToString() + "\n";
             result += "	minValue = " + minValue.ToString() + "\n";
             result += "	maxValue = " + maxValue.ToString() + "\n";
             return result + "}";

@@ -6,15 +6,11 @@ namespace TweakScale
     {
         public struct FactorSet
         {
-            float _linear;
+            private float _linear;
 
-            public float squareRoot
-            {
-                get
-                {
-                    return (float)Math.Sqrt(_linear);
-                }
-            }
+            /// <summary>
+            /// Linear scaling, i.e. length.
+            /// </summary>
             public float linear
             {
                 get
@@ -22,6 +18,10 @@ namespace TweakScale
                     return _linear;
                 }
             }
+
+            /// <summary>
+            /// Quadratic scaling, i.e. surface area.
+            /// </summary>
             public float quadratic
             {
                 get
@@ -29,6 +29,10 @@ namespace TweakScale
                     return _linear * _linear;
                 }
             }
+
+            /// <summary>
+            /// Cubic scaling, i.e. volume.
+            /// </summary>
             public float cubic
             {
                 get
@@ -47,6 +51,9 @@ namespace TweakScale
         FactorSet _relative;
         int _index;
 
+        /// <summary>
+        /// Scale factors relative to the part's default scale.
+        /// </summary>
         public FactorSet absolute
         {
             get
@@ -54,6 +61,10 @@ namespace TweakScale
                 return _absolute;
             }
         }
+
+        /// <summary>
+        /// Scale factors relative the part's current scale.
+        /// </summary>
         public FactorSet relative
         {
             get
@@ -61,6 +72,10 @@ namespace TweakScale
                 return _relative;
             }
         }
+
+        /// <summary>
+        /// The 0-based index of the currently chosen scale. -1 if freely scalable.
+        /// </summary>
         public int index
         {
             get

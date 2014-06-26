@@ -68,5 +68,37 @@ namespace TweakScale
             }
         }
     }
+
+    public static class ConvertEx
+    {
+        /// <summary>
+        /// Returns an object of tyep <typeparamref name="T"/> and whose value is equivalent to <paramref name="value"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of object to return.</typeparam>
+        /// <typeparam name="U">The type of the object to convert.</typeparam>
+        /// <param name="value">The object to convert.</param>
+        /// <returns>An object whose type is <typeparamref name="T"/> and whose value is equivalent to <paramref name="value"/>. -or- A null reference (Nothing in Visual Basic), if <paramref name="value"/> is null and <typeparamref name="T"/> is not a value type.</returns>
+        /// <exception cref="System.InvalidCastException">This conversion is not supported. -or-<paramref name="value"/> is null and <typeparamref name="T"/> is a value type.</exception>
+        /// <exception cref="System.FormatException"><paramref name="value"/> is not in a format recognized by <typeparamref name="T"/>.</exception>
+        /// <exception cref="System.OverflowException"><paramref name="value"/> represents a number that is out of the range of <typeparamref name="T"/>.</exception>
+        public static T ChangeType<T, U>(U value) where U : System.IConvertible
+        {
+            return (T)Convert.ChangeType(value, typeof(T));
+        }
+
+        /// <summary>
+        /// Returns an object of tyep <typeparamref name="T"/> and whose value is equivalent to <paramref name="value"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of object to return.</typeparam>
+        /// <param name="value">The object to convert.</param>
+        /// <returns>An object whose type is <typeparamref name="T"/> and whose value is equivalent to <paramref name="value"/>. -or- A null reference (Nothing in Visual Basic), if <paramref name="value"/> is null and <typeparamref name="T"/> is not a value type.</returns>
+        /// <exception cref="System.InvalidCastException">This conversion is not supported. -or-<paramref name="value"/> is null and <typeparamref name="T"/> is a value type.-or-<paramref name="value"/> does not implement the System.IConvertible interface.</exception>
+        /// <exception cref="System.FormatException"><paramref name="value"/> is not in a format recognized by <typeparamref name="T"/>.</exception>
+        /// <exception cref="System.OverflowException"><paramref name="value"/> represents a number that is out of the range of <typeparamref name="T"/>.</exception>
+        public static T ChangeType<T>(object value)
+        {
+            return (T)Convert.ChangeType(value, typeof(T));
+        }
+    }
 }
 
