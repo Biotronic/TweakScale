@@ -31,14 +31,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>E:\Kerbal Space Program\KSP_32_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>E:\KSP_Test\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>E:\Kerbal Space Program\KSP_32_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>E:\KSP_Test\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="KSPAPIExtensions, Version=1.4.3.1, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>Gamedata\TweakScale\plugins\KSPAPIExtensions.dll</HintPath>
+    <Reference Include="KSPAPIExtensions">
+      <HintPath>lib\KSPAPIExtensions.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -48,13 +47,14 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
-      <HintPath>E:\Kerbal Space Program\KSP_32_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>E:\KSP_Test\KSP_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Checker.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="FieldChanger.cs" />
+    <Compile Include="ScaleExponents.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Scale.cs" />

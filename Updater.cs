@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace TweakScale
 {
-    public class RescalableRegistratorAddon : MonoBehaviour
+    public abstract class RescalableRegistratorAddon : MonoBehaviour
     {
         private static bool loadedInScene;
 
@@ -22,9 +22,7 @@ namespace TweakScale
             OnStart();
         }
 
-        public virtual void OnStart()
-        {
-        }
+        public abstract void OnStart();
 
         public void Update()
         {
@@ -91,7 +89,7 @@ namespace TweakScale
             _module = module;
         }
 
-        // Creates an updater for each module attached to a part.
+        // Creates an updater for each module attached to destination part.
         public static IEnumerable<IRescalable> createUpdaters(Part part)
         {
             foreach (var mod in part.Modules.Cast<PartModule>())
@@ -153,180 +151,24 @@ namespace TweakScale
 
     /// <summary>
     /// This class updates fields and properties that are mentioned in TWEAKSCALEEXPONENTS blocks in .cfgs.
-    /// It does this by looking up the field or property by name through reflection, and scales the value stored in the base part (i.e. prefab).
+    /// It does this by looking up the field or property by name through reflection, and scales the exponentValue stored in the base part (i.e. prefab).
     /// </summary>
     class TSGenericUpdater : IRescalable
     {
         Part _part;
         Part _basePart;
         TweakScale _ts;
-        ConfigNode[] _localExponents;
 
         public TSGenericUpdater(Part part)
         {
             _part = part;
             _basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
             _ts = part.Modules.OfType<TweakScale>().First();
-            _localExponents = _ts.moduleNode.GetNodes("TWEAKSCALEEXPONENTS");
-        }
-
-        private IEnumerable<ConfigNode> GetConfigs()
-        {
-            foreach (var node in GameDatabase.Instance.GetConfigs("TWEAKSCALEEXPONENTS").Select(a => a.config).Where(a => !a.HasValue("name")))
-            {
-                yield return node;
-            }
-            foreach (var node in _localExponents.Where(a => !a.HasValue("name")))
-            {
-                yield return node;
-            }
-        }
-
-        private IEnumerable<ConfigNode> GetConfigs(params string[] names)
-        {
-            foreach (var name in names)
-            {
-                foreach (var node in GameDatabase.Instance.GetConfigs("TWEAKSCALEEXPONENTS").Where(a => a.name == name).Select(a => a.config))
-                {
-                    yield return node;
-                }
-                foreach (var node in _localExponents.Where(a => a.GetValue("name") == name))
-                {
-                    yield return node;
-                }
-            }
-        }
-
-        private IEnumerable<Tuple<PartModule, PartModule>> ModSets
-        {
-            get
-            {
-                return _part.Modules.OfType<PartModule>().Zip(_basePart.Modules.OfType<PartModule>());
-            }
-        }
-
-        private void UpdateModule(ConfigNode.Value value, object mod, object baseMod, ScalingFactor factor)
-        {
-            var baseVal = MemberChanger<double>.CreateFromName(baseMod, value.name);
-            var val = MemberChanger<double>.CreateFromName(mod, value.name);
-            var modType = mod.GetType();
-
-            if (val == null)
-            {
-                Tools.Logf("Non-existent Member {0} for PartModule type {1}", value.name, modType.FullName);
-                return;
-            }
-            if (val.MemberType != typeof(float) && val.MemberType != typeof(double))
-            {
-                Tools.Logf("Member {0} for PartModule type {1} is of type {2}. Required: float or double", value.name, modType.FullName, val.MemberType.FullName);
-                return;
-            }
-
-            if (value.value.Contains(","))
-            {
-                var values = value.value.Split(',').Select(a => ConvertEx.ChangeType<double>(a)).ToArray();
-
-                if (values.Length >= factor.index || factor.index < 0)
-                {
-                    val.Value = values[factor.index];
-                }
-                else
-                {
-                    Tools.Logf("Can't set value from array: Index out of bounds: {0}.", factor.index);
-                }
-            }
-            else
-            {
-                double exp;
-                if (!double.TryParse(value.value, out exp))
-                {
-                    Tools.Logf("Invalid value for exponent {0}: \"{1}\"", value.name, value.value);
-                    return;
-                }
-                var newValue = baseVal.Value;
-                newValue *= Math.Pow(factor.absolute.linear, exp);
-                val.Value = newValue;
-            }
-        }
-
-        private void UpdateSubItem(ConfigNode cfg, object mod, object baseMod, ScalingFactor factor)
-        {
-            var f1 = mod.GetType().GetField(cfg.name, BindingFlags.Instance | BindingFlags.Public);
-            if (f1 == null)
-                return;
-
-            if (f1.FieldType.GetInterface("IEnumerable") != null)
-            {
-                var name = cfg.HasValue("name") ? cfg.GetValue("name") : "*";
-
-                var ie1 = ((IEnumerable)f1.GetValue(mod)).Cast<object>();
-                var ie2 = ((IEnumerable)f1.GetValue(baseMod)).Cast<object>();
-                if (name == "*")
-                {
-                    foreach (var e in ie1.Zip(ie2))
-                    {
-                        UpdateFromCfgs(new[] { cfg }, e.Item1, e.Item2, factor);
-                    }
-                }
-                else
-                {
-                    foreach (var e in ie1.Zip(ie2))
-                    {
-                        var et = e.Item1.GetType();
-                        var n = et.GetField("name", BindingFlags.Instance | BindingFlags.Public);
-                        if (n.FieldType != typeof(string))
-                            continue;
-
-                        string nn = (string)n.GetValue(e.Item1);
-                        if (nn == name)
-                        {
-                            UpdateFromCfgs(new[] { cfg }, e.Item1, e.Item2, factor);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                UpdateFromCfgs(new[] { cfg }, f1.GetValue(mod), f1.GetValue(baseMod), factor);
-            }
-        }
-
-        private void UpdateFromCfgs(IEnumerable<ConfigNode> cfgs, object mod, object baseMod, ScalingFactor factor)
-        {
-            if (mod == null || baseMod == null || cfgs == null)
-                return;
-
-            foreach (var cfg in cfgs)
-            {
-                foreach (ConfigNode.Value value in cfg.values)
-                {
-                    if (value.name == "name")
-                        continue;
-                    UpdateModule(value, mod, baseMod, factor);
-                }
-
-                foreach (ConfigNode node in cfg.nodes.OfType<ConfigNode>())
-                {
-                    UpdateSubItem(node, mod, baseMod, factor);
-                }
-            }
         }
 
         public void OnRescale(ScalingFactor factor)
         {
-            var cfgs = GetConfigs();
-            UpdateFromCfgs(cfgs, _part, _basePart, factor);
-
-            foreach (var modSet in ModSets)
-            {
-                var mod = modSet.Item1;
-                var baseMod = modSet.Item2;
-                var modType = mod.GetType();
-
-                cfgs = GetConfigs(modType.Name, modType.FullName);
-
-                UpdateFromCfgs(cfgs, mod, baseMod, factor);
-            }
+            ScaleExponents.UpdateObject(_ts, _part, _basePart, _ts.config.exponents, factor);
         }
     }
 }

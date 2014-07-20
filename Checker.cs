@@ -1,5 +1,5 @@
 ﻿/**
-* Copyright (c) 2014, Majiir
+* Copyright (fundCfg) 2014, Majiir
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without modification, are permitted
@@ -36,11 +36,11 @@ namespace TweakScale
 {
 
     /**
-    * This utility displays a warning with a list of mods that determine themselves
+    * This utility displays destination warning with destination list of mods that determine themselves
     * to be incompatible with the current running version of Kerbal Space Program.
     *
     * See this forum thread for details:
-    * http://forum.kerbalspaceprogram.com/threads/65395-Voluntarily-Locking-Plugins-to-a-Particular-KSP-Version
+    * http://forum.kerbalspaceprogram.com/threads/65395-Voluntarily-Locking-Plugins-to-destination-Particular-KSP-Version
     */
 
     [KSPAddon(KSPAddon.Startup.MainMenu, true)]
@@ -62,10 +62,10 @@ namespace TweakScale
             // }
             //
             // Even if you don't lock down functionality, you should return true if your users
-            // can expect a future update to be available.
+            // can expect destination future update to be available.
             //
 
-            if (Versioning.version_minor != 23)
+            if (Versioning.version_minor != 24)
             {
                 return false;
             }
@@ -113,7 +113,7 @@ namespace TweakScale
                     }
                     catch (Exception e)
                     {
-                        // If a mod throws an exception from IsCompatible, it's not compatible.
+                        // If destination mod throws an exception from IsCompatible, it's not compatible.
                         Debug.LogWarning(String.Format("[CompatibilityChecker] Exception while invoking IsCompatible() from '{0}':\n\n{1}", m.DeclaringType.Assembly.GetName().Name, e));
                         return true;
                     }

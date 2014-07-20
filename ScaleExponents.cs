@@ -1,0 +1,358 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace TweakScale
+{
+    [KSPAddon(KSPAddon.Startup.MainMenu, false)]
+    class ScaleExponentsLoader : RescalableRegistratorAddon
+    {
+        public override void OnStart()
+        {
+            ScaleExponents.LoadGlobalExponents();
+        }
+    }
+
+    public class ScaleExponents
+    {
+        private string _id;
+        private string _name;
+        private Dictionary<string, string> _exponents;
+        private Dictionary<string, ScaleExponents> _children;
+
+        private static Dictionary<string, ScaleExponents> globalList;
+        private static bool globalListLoaded = false;
+
+        private const string exponentConfigName = "TWEAKSCALEEXPONENTS";
+
+        /// <summary>
+        /// Load all TWEAKSCALEEXPONENTS that are globally defined.
+        /// </summary>
+        public static void LoadGlobalExponents()
+        {
+            if (!globalListLoaded)
+            {
+                var tmp = GameDatabase.Instance.GetConfigs(exponentConfigName)
+                    .Select(a => new ScaleExponents(a.config));
+
+                globalList = tmp
+                    .GroupBy(a => a._id)
+                    .Select(a => a.Aggregate((b, c) => Merge(b, c)))
+                    .ToDictionary(a => a._id, a => a);
+                globalListLoaded = true;
+            }
+        }
+
+        /// <summary>
+        /// Creates module copy of the ScaleExponents.
+        /// </summary>
+        /// <returns>A copy of the object on which the function is called.</returns>
+        private ScaleExponents Clone()
+        {
+            return new ScaleExponents(this);
+        }
+
+        private ScaleExponents(ScaleExponents source)
+        {
+            _id = source._id;
+            if (source == null)
+            {
+                _exponents = new Dictionary<string, string>();
+                _children = new Dictionary<string, ScaleExponents>();
+            }
+            else
+            {
+                _exponents = source._exponents.Clone();
+                _children = source
+                    ._children
+                    .Select(a => new KeyValuePair<string, ScaleExponents>(a.Key, a.Value.Clone()))
+                    .ToDictionary(a => a.Key, a => a.Value);
+            }
+        }
+
+        private ScaleExponents(ConfigNode node, ScaleExponents source = null)
+        {
+            _id = node.name == exponentConfigName ? node.GetValue("name") : node.name;
+            _name = node.GetValue("name");
+            if (_id == null)
+            {
+                _id = "";
+            }
+            _exponents = new Dictionary<string, string>();
+            _children = new Dictionary<string, ScaleExponents>();
+
+            foreach (var value in node.values.OfType<ConfigNode.Value>().Where(a=>a.name != "name"))
+            {
+                _exponents[value.name] = value.value;
+            }
+
+            foreach (var childNode in node.nodes.OfType<ConfigNode>())
+            {
+                _children[childNode.name] = new ScaleExponents(childNode);
+            }
+
+            if (source != null)
+            {
+                Merge(this, source);
+            }
+        }
+
+        /// <summary>
+        /// Merge two ScaleExponents. All the values in <paramref name="source"/> that are not already present in <paramref name="destination"/> will be added to <paramref name="destination"/>
+        /// </summary>
+        /// <param name="destination">The ScaleExponents to update.</param>
+        /// <param name="source">The ScaleExponents to add to <paramref name="destination"/></param>
+        /// <returns>The updated exponentValue of <paramref name="destination"/>. Note that this exponentValue is also changed, so using the return exponentValue is not necessary.</returns>
+        public static ScaleExponents Merge(ScaleExponents destination, ScaleExponents source)
+        {
+            if (destination._id != source._id)
+            {
+                Tools.Logf("Wrong merge target! A name {0}, B name {1}", destination._id, source._id);
+            }
+            foreach (var value in source._exponents)
+            {
+                if (!destination._exponents.ContainsKey(value.Key))
+                {
+                    destination._exponents[value.Key] = value.Value;
+                }
+            }
+            foreach (var child in source._children)
+            {
+                if (destination._children.ContainsKey(child.Key))
+                {
+                    Merge(destination._children[child.Key], child.Value);
+                }
+                else
+                {
+                    destination._children[child.Key] = child.Value.Clone();
+                }
+            }
+            return destination;
+        }
+
+        /// <summary>
+        /// The names of all exponents this ScaleExponents set covers.
+        /// </summary>
+        public IEnumerable<string> Exponents
+        {
+            get
+            {
+                return _exponents.Keys;
+            }
+        }
+
+        /// <summary>
+        /// Rescales destination exponentValue according to its associated exponent.
+        /// </summary>
+        /// <param name="currentValue">The current exponentValue.</param>
+        /// <param name="baseValue">The unscaled exponentValue, gotten from the prefab.</param>
+        /// <param name="name">The name of the field.</param>
+        /// <param name="factor">The rescaling factor.</param>
+        /// <param name="relative">Whether to use relative or absolute scaling.</param>
+        /// <returns>The rescaled exponentValue.</returns>
+        public double Rescale(double currentValue, double baseValue, string name, ScalingFactor factor, bool relative = false)
+        {
+            Tools.Logf("Rescaling {0}. Old value {1}. rel {2}, abs {3}", name, currentValue, factor.relative.linear, factor.absolute.linear);
+
+            if (!_exponents.ContainsKey(name))
+            {
+                Tools.Logf("No exponent found for {0}.{1}", this._id, name);
+                return currentValue;
+            }
+
+            var exponentValue = _exponents[name];
+            if (exponentValue.Contains(','))
+            {
+                if (factor.index == -1)
+                {
+                    Tools.Logf("Value list used for freescale part exponent field {0}: {1}", name, exponentValue);
+                    return currentValue;
+                }
+                var values = Tools.ConvertString(exponentValue, new double[] { });
+                if (values.Length == 0)
+                {
+                    Tools.Logf("No valid values found for {0}: {1}", name, exponentValue);
+                }
+                if (values.Length <= factor.index)
+                {
+                    Tools.Logf("Too few values given for {0}. Expected at least {1}, got {2}: {3}", name, factor.index+1, values.Length, exponentValue);
+                }
+                return values[factor.index];
+            }
+            else
+            {
+                double exponent = 1;
+                if (double.TryParse(exponentValue, out exponent))
+                {
+                    if (relative)
+                    {
+                        return currentValue * Math.Pow(factor.relative.linear, exponent);
+                    }
+                    return baseValue * Math.Pow(factor.absolute.linear, exponent);
+                }
+                return currentValue;
+            }
+        }
+
+        /// <summary>
+        /// Rescale the fields of <paramref name="obj"/> according to the exponents of the ScaleExponents and <paramref name="factor"/>.
+        /// </summary>
+        /// <param name="obj">The object to rescale.</param>
+        /// <param name="baseObj">The corresponding object in the prefab.</param>
+        /// <param name="factor">The new scale.</param>
+        public void UpdateFields(object obj, object baseObj, ScalingFactor factor)
+        {
+            if (_id == "" && obj is PartModule)
+            {
+                Tools.Logf("Unnamed ScaleExponents are intended for Parts, not PartModules.");
+                return;
+            }
+            if (_id != "" && obj is Part)
+            {
+                Tools.Logf("Named ScaleExponents are intended for PartModules, not Parts.");
+                return;
+            }
+            if (obj is PartModule && obj.GetType().Name != _id)
+            {
+                Tools.Logf("This ScaleExponent is intended for {0}, not {1}", _id, obj.GetType().Name);
+                return;
+            }
+
+            if (obj is IEnumerable)
+            {
+                UpdateEnumerable(((IEnumerable)obj).Cast<object>(), ((IEnumerable)baseObj).Cast<object>(), factor);
+                return;
+            }
+
+            foreach (var rawFieldName in Exponents)
+            {
+                string fieldName = rawFieldName;
+                var baseObjTmp = baseObj;
+                if (fieldName.StartsWith("!"))
+                {
+                    fieldName = fieldName.Substring(1);
+                    baseObjTmp = null;
+                }
+                var value = FieldChanger<double>.CreateFromName(obj, fieldName);
+                if (value == null)
+                {
+                    continue;
+                }
+                if (baseObjTmp == null)
+                {
+                    // No prefab from which to grab values. Use relative scaling.
+                    value.Value = Rescale(value.Value, value.Value, rawFieldName, factor, relative: true);
+                }
+                else
+                {
+                    var baseValue = FieldChanger<double>.CreateFromName(baseObj, fieldName);
+                    value.Value = Rescale(value.Value, baseValue.Value, rawFieldName, factor);
+                }
+            }
+
+            foreach (var _child in _children)
+            {
+                string childName = _child.Key;
+                var baseObjTmp = baseObj;
+                if (childName.StartsWith("!"))
+                {
+                    childName = childName.Substring(1);
+                    baseObjTmp = null;
+                }
+                var childObjField = FieldChanger<object>.CreateFromName(obj, childName);
+                if (childObjField != null)
+                {
+                    var baseChildObjField = FieldChanger<object>.CreateFromName(baseObjTmp, childName);
+                    _child.Value.UpdateFields(childObjField.Value, baseChildObjField.Value, factor);
+                }
+            }
+        }
+
+        /// <summary>
+        /// For IEnumerables (arrays, lists, etc), we want to update the items, not the list.
+        /// </summary>
+        /// <param name="obj">The list whose items we want to update.</param>
+        /// <param name="baseObj">The corresponding list in the prefab.</param>
+        /// <param name="factor">The scaling factor.</param>
+        private void UpdateEnumerable(IEnumerable<object> obj, IEnumerable<object> baseObj, ScalingFactor factor)
+        {
+            if (baseObj == null || obj.Count() != baseObj.Count())
+            {
+                // Need to resort to relative scaling. 
+                foreach (var item in obj)
+                {
+                    if (_name != "" && _name != "*") // Operate on specific elements, not all.
+                    {
+                        var childName = item.GetType().GetField("name");
+                        if (childName != null)
+                        {
+                            if (childName.FieldType != typeof(string) || (string)childName.GetValue(item) != _name)
+                            {
+                                continue;
+                            }
+                        }
+                    }
+                    UpdateFields(item, null, factor);
+                }
+            }
+            else
+            {
+                foreach (var item in obj.Zip(baseObj))
+                {
+                    if (!string.IsNullOrEmpty(_name) && _name != "*") // Operate on specific elements, not all.
+                    {
+                        var childName = item.Item1.GetType().GetField("name");
+                        if (childName != null)
+                        {
+                            if (childName.FieldType != typeof(string) || (string)childName.GetValue(item.Item1) != _name)
+                            {
+                                continue;
+                            }
+                        }
+                    }
+                    UpdateFields(item.Item1, item.Item2, factor);
+                }
+            }
+        }
+
+        public static void UpdateObject(TweakScale scale, Part part, Part basePart, Dictionary<string, ScaleExponents> exps, ScalingFactor factor)
+        {
+            if (exps.ContainsKey(""))
+            {
+                exps[""].UpdateFields(part, basePart, factor);
+            }
+
+            var modulesAndExponents = part.Modules.OfType<PartModule>().Zip(basePart.Modules.OfType<PartModule>()).Join(exps, module => module.Item1.moduleName, exponents => exponents.Key, (module, exponent) => Tuple.Create(module, exponent.Value));
+
+            foreach (var item in modulesAndExponents)
+            {
+                item.Item2.UpdateFields(item.Item1.Item1, item.Item1.Item2, factor);
+            }
+        }
+
+        public static Dictionary<string, ScaleExponents> CreateExponentsForModule(ConfigNode node)
+        {
+            var local = node.nodes
+                .OfType<ConfigNode>()
+                .Where(a => a.name == exponentConfigName)
+                .Select(a => new ScaleExponents(a))
+                .ToDictionary(a => a._id);
+            
+            foreach (var gExp in globalList.Values)
+            {
+                if (local.ContainsKey(gExp._id))
+                {
+                    Merge(local[gExp._id], gExp);
+                }
+                else
+                {
+                    local[gExp._id] = gExp;
+                }
+            }
+
+            return local;
+        }
+    }
+}
