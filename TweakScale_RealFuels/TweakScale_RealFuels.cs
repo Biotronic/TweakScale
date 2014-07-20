@@ -31,18 +31,7 @@ namespace TweakScale_RealFuels
         override public void OnRescale(ScalingFactor factor)
         {
             var baseModule = GetBaseModule<RealFuels.ModuleFuelTanks>();
-            module.basemass = baseModule.basemass * factor.absolute.cubic;
-            module.basemassPV = baseModule.basemassPV * factor.absolute.cubic;
-            module.volume = baseModule.volume * factor.absolute.cubic;
-            try
-            {
-                module.UpdateMass();
-            }
-            catch (Exception)
-            {
-                // Just silently ignore this one...
-                // I have a reason: this is the only module that seems to misbehave when scaled too early.
-            }
+            module.ChangeVolume(baseModule.volume * factor.absolute.cubic);
         }
     }
     /*
