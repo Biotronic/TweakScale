@@ -14,6 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 namespace TweakScale
@@ -245,9 +246,9 @@ namespace TweakScale
             {
                 if (!isFreeScale)
                 {
-                    tweakName = defaultName = Tools.ClosestIndex(tweakScale, scaleFactors);
+                    tweakName = Tools.ClosestIndex(tweakScale, scaleFactors);
                 }
-                updateByWidth(scalingFactor, false);
+                updateByWidth(false);
             }
 
             foreach (var updater in updaters)
@@ -258,6 +259,7 @@ namespace TweakScale
 
         public override void OnStart(StartState state)
         {
+            Tools.Logf(MethodBase.GetCurrentMethod().Name);
             base.OnStart(state);
             Setup();
         }
@@ -279,12 +281,11 @@ namespace TweakScale
         /// </summary>
         /// <param name="node">The node to move.</param>
         /// <param name="baseNode">The same node, as found on the prefab part.</param>
-        /// <param name="factor">The factor by which to modify the node's location.</param>
         /// <param name="movePart">Whether or not to move attached parts.</param>
-        private void moveNode(AttachNode node, AttachNode baseNode, ScalingFactor factor, bool movePart)
+        private void moveNode(AttachNode node, AttachNode baseNode, bool movePart)
         {
             Vector3 oldPosition = node.position;
-            node.position = baseNode.position * factor.absolute.linear;
+            node.position = baseNode.position * scalingFactor.absolute.linear;
             if (movePart && node.attachedPart != null)
             {
                 if (node.attachedPart == part.parent)
@@ -292,6 +293,16 @@ namespace TweakScale
                 else
                     node.attachedPart.transform.Translate(node.position - oldPosition, part.transform);
             }
+            rescaleNode(node, baseNode);
+        }
+
+        /// <summary>
+        /// Change the size of <paramref name="node"/> to reflect the new size of the part it's attached to.
+        /// </summary>
+        /// <param name="node">The node to resize.</param>
+        /// <param name="baseNode">The same node, as found on the prefab part.</param>
+        private void rescaleNode(AttachNode node, AttachNode baseNode)
+        {
             if (isFreeScale)
             {
                 node.size = (int)(baseNode.size + (tweakScale - defaultScale) / (maxSize - minSize) * 5);
@@ -308,18 +319,46 @@ namespace TweakScale
         }
 
         /// <summary>
+        /// Change the size of all attachment nodes to reflect the new size of the part they're attached to.
+        /// </summary>
+        private void rescaleAllNodes()
+        {
+            foreach (AttachNode node in part.attachNodes)
+            {
+                var nodesWithSameId = part.attachNodes
+                    .Where(a => a.id == node.id)
+                    .ToArray();
+                var idIdx = Array.FindIndex(nodesWithSameId, a => a == node);
+                var baseNodesWithSameId = prefabPart.attachNodes
+                    .Where(a => a.id == node.id)
+                    .ToArray();
+                if (idIdx < baseNodesWithSameId.Length)
+                {
+                    var baseNode = baseNodesWithSameId[idIdx];
+
+                    Tools.Logf("Rescaling node {0}", node.id);
+                    rescaleNode(node, baseNode);
+                }
+                else
+                {
+                    Tools.Logf("Error scaling part. Node {0} does not have counterpart in base part.", node.id);
+                }
+            }
+            rescaleNode(part.srfAttachNode, prefabPart.srfAttachNode);
+        }
+
+        /// <summary>
         /// Updates properties that change linearly with scale.
         /// </summary>
-        /// <param name="factor">The factor by which to modify properties</param>
         /// <param name="moveParts">Whether or not to move attached parts.</param>
-        private void updateByWidth(ScalingFactor factor, bool moveParts)
+        private void updateByWidth(bool moveParts)
         {
             if (defaultTransformScale.x == 0.0f)
             {
                 defaultTransformScale = part.transform.GetChild(0).localScale;
             }
 
-            savedScale = part.transform.GetChild(0).localScale = factor.absolute.linear * defaultTransformScale;
+            savedScale = part.transform.GetChild(0).localScale = scalingFactor.absolute.linear * defaultTransformScale;
             part.transform.GetChild(0).hasChanged = true;
             part.transform.hasChanged = true;
 
@@ -336,7 +375,7 @@ namespace TweakScale
                 {
                     var baseNode = baseNodesWithSameId[idIdx];
 
-                    moveNode(node, baseNode, factor, moveParts);
+                    moveNode(node, baseNode, moveParts);
                 }
                 else
                 {
@@ -346,7 +385,7 @@ namespace TweakScale
 
             if (part.srfAttachNode != null)
             {
-                moveNode(part.srfAttachNode, prefabPart.srfAttachNode, factor, moveParts);
+                moveNode(part.srfAttachNode, prefabPart.srfAttachNode, moveParts);
             }
             if (moveParts)
             {
@@ -355,7 +394,7 @@ namespace TweakScale
                     if (child.srfAttachNode != null && child.srfAttachNode.attachedPart == part) // part is attached to us, but not on destination node
                     {
                         Vector3 attachedPosition = child.transform.localPosition + child.transform.localRotation * child.srfAttachNode.position;
-                        Vector3 targetPosition = attachedPosition * factor.absolute.linear;
+                        Vector3 targetPosition = attachedPosition * scalingFactor.absolute.linear;
                         child.transform.Translate(targetPosition - attachedPosition, part.transform);
                     }
                 }
@@ -416,7 +455,7 @@ namespace TweakScale
                         tweakScale = scaleFactors[tweakName];
                     }
 
-                    updateByWidth(scalingFactor, true);
+                    updateByWidth(true);
                     updateWindow();
 
                     foreach (var updater in updaters)
@@ -427,7 +466,7 @@ namespace TweakScale
                 }
                 else if (part.transform.GetChild(0).localScale != savedScale) // editor frequently nukes our OnStart resize some time later
                 {
-                    updateByWidth(scalingFactor, false);
+                    updateByWidth(false);
                 }
             }
         }
