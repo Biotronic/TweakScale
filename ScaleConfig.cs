@@ -132,7 +132,7 @@ namespace TweakScale
             }
             defaultScale = Tools.clamp(tmpScale, minValue, maxValue);
 
-            exponents = ScaleExponents.CreateExponentsForModule(config);
+            exponents = ScaleExponents.CreateExponentsForModule(config, source.exponents);
         }
 
         public override string ToString()

@@ -335,14 +335,26 @@ namespace TweakScale
             }
         }
 
-        public static Dictionary<string, ScaleExponents> CreateExponentsForModule(ConfigNode node)
+        public static Dictionary<string, ScaleExponents> CreateExponentsForModule(ConfigNode node, Dictionary<string, ScaleExponents> parent)
         {
             var local = node.nodes
                 .OfType<ConfigNode>()
                 .Where(IsExponentBlock)
                 .Select(a => new ScaleExponents(a))
                 .ToDictionary(a => a._id);
-            
+
+            foreach (var pExp in parent.Values)
+            {
+                if (local.ContainsKey(pExp._id))
+                {
+                    Merge(local[pExp._id], pExp);
+                }
+                else
+                {
+                    local[pExp._id] = pExp;
+                }
+            }
+
             foreach (var gExp in globalList.Values)
             {
                 if (local.ContainsKey(gExp._id))
