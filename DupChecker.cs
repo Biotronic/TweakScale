@@ -37,7 +37,7 @@ namespace TweakScale
 
             var scales = AssemblyLoader
                 .loadedAssemblies
-                .Where(a => a.assembly.GetType("TweakScale.TweakScale") != null)
+                .Where(a => a.assembly.GetType("TweakScale.TweakScale") != null || a.assembly.GetType("GoodspeedTweakScale") != null)
                 .Where(a => !Tools.KSPRelativePath(a.assembly.CodeBase).StartsWith("GameData\\TweakScale", StringComparison.InvariantCultureIgnoreCase))
                 .ToArray();
 
