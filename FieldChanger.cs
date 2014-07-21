@@ -79,7 +79,6 @@ namespace TweakScale
             }
             set
             {
-                Tools.Logf("Setting {0} to {1}", fi.Name, value);
                 fi.SetValue(obj, Convert.ChangeType(value, MemberType));
             }
         }
@@ -123,7 +122,6 @@ namespace TweakScale
             }
             set
             {
-                Tools.Logf("Setting {0} to {1}", pi.Name, value);
                 pi.SetValue(obj, Convert.ChangeType(value, MemberType), null);
             }
         }

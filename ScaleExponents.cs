@@ -27,6 +27,11 @@ namespace TweakScale
 
         private const string exponentConfigName = "TWEAKSCALEEXPONENTS";
 
+        private static bool IsExponentBlock(ConfigNode node)
+        {
+            return node.name == exponentConfigName || node.name == "MODULE";
+        }
+
         /// <summary>
         /// Load all TWEAKSCALEEXPONENTS that are globally defined.
         /// </summary>
@@ -74,7 +79,7 @@ namespace TweakScale
 
         private ScaleExponents(ConfigNode node, ScaleExponents source = null)
         {
-            _id = node.name == exponentConfigName ? node.GetValue("name") : node.name;
+            _id = IsExponentBlock(node) ? node.GetValue("name") : node.name;
             _name = node.GetValue("name");
             if (_id == null)
             {
@@ -154,8 +159,6 @@ namespace TweakScale
         /// <returns>The rescaled exponentValue.</returns>
         public double Rescale(double currentValue, double baseValue, string name, ScalingFactor factor, bool relative = false)
         {
-            Tools.Logf("Rescaling {0}. Old value {1}. rel {2}, abs {3}", name, currentValue, factor.relative.linear, factor.absolute.linear);
-
             if (!_exponents.ContainsKey(name))
             {
                 Tools.Logf("No exponent found for {0}.{1}", this._id, name);
@@ -183,7 +186,7 @@ namespace TweakScale
             }
             else
             {
-                double exponent = 1;
+                double exponent;
                 if (double.TryParse(exponentValue, out exponent))
                 {
                     if (relative)
@@ -336,7 +339,7 @@ namespace TweakScale
         {
             var local = node.nodes
                 .OfType<ConfigNode>()
-                .Where(a => a.name == exponentConfigName)
+                .Where(IsExponentBlock)
                 .Select(a => new ScaleExponents(a))
                 .ToDictionary(a => a._id);
             
