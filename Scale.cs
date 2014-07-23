@@ -335,7 +335,6 @@ namespace TweakScale
                 {
                     var baseNode = baseNodesWithSameId[idIdx];
 
-                    Tools.Logf("Rescaling node {0}", node.id);
                     rescaleNode(node, baseNode);
                 }
                 else

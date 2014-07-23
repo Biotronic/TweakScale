@@ -147,22 +147,18 @@ namespace TweakScale
         {
             if (module is IRescalable)
             {
-                Tools.Logf("This one's rescalable, just return it!");
                 return module as IRescalable;
             }
             var name = module.GetType().FullName;
             if (ctors.ContainsKey(name))
             {
-                Tools.Logf("Returning {0}", module.GetType().FullName);
                 return ctors[name](module);
             }
             name = module.GetType().Name;
             if (ctors.ContainsKey(name))
             {
-                Tools.Logf("Returning {0}", module.GetType().Name);
                 return ctors[name](module);
             }
-            Tools.Logf("Dafuq? No updater for {0}", module.GetType().FullName);
             return null;
         }
 

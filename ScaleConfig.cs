@@ -62,6 +62,19 @@ namespace TweakScale
             return (object)config == null ? defaultConfig : new ScaleConfig(config.config);
         }
 
+        private static ScaleConfig[] configs;
+        public static ScaleConfig[] AllConfigs
+        {
+            get
+            {
+                if (configs == null)
+                {
+                    configs = GameDatabase.Instance.GetConfigs("SCALETYPE").Select(a => new ScaleConfig(a.config)).ToArray();
+                }
+                return configs;
+            }
+        }
+
         private static ScaleConfig defaultConfig = new ScaleConfig();
 
         private float[] _scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
@@ -74,6 +87,7 @@ namespace TweakScale
         public float maxValue = 5.0f;
         public float defaultScale = 1.25f;
         public string suffix = "m";
+        public string name;
 
         public float[] scaleFactors
         {
@@ -114,6 +128,7 @@ namespace TweakScale
             _scaleFactors = Tools.ConfigValue(config, "scaleFactors", defaultValue: source._scaleFactors);
             _scaleNames   = Tools.ConfigValue(config, "scaleNames",   defaultValue: source._scaleNames).Select(a => a.Trim()).ToArray();
             techRequired  = Tools.ConfigValue(config, "techRequired", defaultValue: source.techRequired).Select(a=>a.Trim()).ToArray();
+            name          = Tools.ConfigValue(config, "name",         defaultValue: "unnamed scaletype");
 
             if (_scaleFactors.Length != _scaleNames.Length)
             {
