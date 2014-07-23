@@ -263,16 +263,10 @@ namespace TweakScale
             foreach (var _child in _children)
             {
                 string childName = _child.Key;
-                var baseObjTmp = baseObj;
-                if (childName.StartsWith("!"))
-                {
-                    childName = childName.Substring(1);
-                    baseObjTmp = null;
-                }
                 var childObjField = FieldChanger<object>.CreateFromName(obj, childName);
                 if (childObjField != null)
                 {
-                    var baseChildObjField = FieldChanger<object>.CreateFromName(baseObjTmp, childName);
+                    var baseChildObjField = FieldChanger<object>.CreateFromName(baseObj, childName);
                     _child.Value.UpdateFields(childObjField.Value, baseChildObjField.Value, factor);
                 }
             }
