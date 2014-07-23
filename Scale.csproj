@@ -52,7 +52,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Checker.cs" />
-    <Compile Include="DupChecker.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="FieldChanger.cs" />
     <Compile Include="ScaleExponents.cs" />
