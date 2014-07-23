@@ -4,15 +4,6 @@ using TweakScale;
 
 namespace TweakScale_ModularFuelTanks
 {
-    [KSPAddon(KSPAddon.Startup.EveryScene, false)]
-    internal class MyEditorRegistrationAddon : TweakScale.RescalableRegistratorAddon
-    {
-        public override void OnStart()
-        {
-            TweakScale.TweakScaleUpdater.RegisterUpdater((RealFuels.ModuleFuelTanks mod) => new TweakScaleModularFuelTanksUpdater(mod));
-        }
-    }
-
     class TweakScaleModularFuelTanksUpdater : TweakScaleUpdater<RealFuels.ModuleFuelTanks>
     {
         public TweakScaleModularFuelTanksUpdater(RealFuels.ModuleFuelTanks pm)

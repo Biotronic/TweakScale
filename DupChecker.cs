@@ -18,7 +18,7 @@ namespace TweakScale
         void Start()
         {
             int[] fields =
-                getAllTypes()
+                Tools.getAllTypes()
                 .Where(t => t.Name == "DupChecker")
                 .Select(t => t.GetField("_version", BindingFlags.Static | BindingFlags.NonPublic))
                 .Where(f => f != null)
@@ -65,31 +65,6 @@ namespace TweakScale
                 }
             }   
             asm.Unload();
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        private static IEnumerable<Type> getAllTypes()
-        {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                Type[] types;
-                try
-                {
-                    types = assembly.GetTypes();
-                }
-                catch (Exception)
-                {
-                    types = Type.EmptyTypes;
-                }
-
-                foreach (var type in types)
-                {
-                    yield return type;
-                }
-            }
         }
     }
 }

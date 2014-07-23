@@ -9,7 +9,7 @@ namespace TweakScale
 {
     public abstract class RescalableRegistratorAddon : MonoBehaviour
     {
-        private static bool loadedInScene;
+        private static bool loadedInScene = false;
 
         public void Start()
         {
@@ -31,9 +31,48 @@ namespace TweakScale
         }
     }
 
-    public interface IRescalable
+    [KSPAddon(KSPAddon.Startup.Instantly, true)]
+    class TweakScaleRegister : RescalableRegistratorAddon
     {
-        void OnRescale(ScalingFactor factor);
+        override public void OnStart()
+        {
+            var genericRescalable = Tools.getAllTypes()
+                .Where(IsGenericRescalable)
+                .ToArray();
+
+            foreach (var gen in genericRescalable)
+            {
+                var t = gen.GetInterfaces()
+                    .First(a => a.IsGenericType &&
+                    a.GetGenericTypeDefinition() == typeof(IRescalable<>));
+
+                RegisterGenericRescalable(gen, t.GetGenericArguments()[0]);
+            }
+        }
+
+        private static void RegisterGenericRescalable(Type resc, Type arg)
+        {
+            var m = typeof(TweakScaleUpdater).GetMethod("RegisterUpdater");
+
+            var c = resc.GetConstructor(new[] { arg });
+
+            Func<PartModule, IRescalable> creator = (PartModule pm) => (IRescalable)c.Invoke(new[] { pm });
+
+            m.Invoke(null, new object[] { arg.FullName, creator });
+        }
+
+        private static bool IsRescalable(Type t)
+        {
+            return t.GetInterfaces()
+                .Contains(typeof(IRescalable));
+        }
+
+        private static bool IsGenericRescalable(Type t)
+        {
+            return t.GetInterfaces()
+                .Any(a => a.IsGenericType &&
+                a.GetGenericTypeDefinition() == typeof(IRescalable<>));
+        }
     }
 
     public abstract class TweakScaleUpdater : IRescalable
@@ -56,12 +95,12 @@ namespace TweakScale
         /// </summary>
         /// <typeparam name="ModuleType">The type of PartModule to update.</typeparam>
         /// <param name="creator">A function that creates an updater for this PartModule type.</param>
-        static public void RegisterUpdater<ModuleType>(Func<ModuleType, IRescalable> creator) where ModuleType : PartModule
-        {
-            MonoBehaviour.print("Registering module updater: " + typeof(ModuleType).FullName);
-            ctors[typeof(ModuleType).FullName] = a => a is ModuleType ? creator(a as ModuleType) : null;
-            ctors[typeof(ModuleType).Name] = a => a is ModuleType ? creator(a as ModuleType) : null;
-        }
+        //static public void RegisterUpdater<ModuleType>(Func<ModuleType, IRescalable> creator) where ModuleType : PartModule
+        //{
+        //    MonoBehaviour.print("Registering module updater: " + typeof(ModuleType).FullName);
+        //    ctors[typeof(ModuleType).FullName] = a => a is ModuleType ? creator(a as ModuleType) : null;
+        //    ctors[typeof(ModuleType).Name] = a => a is ModuleType ? creator(a as ModuleType) : null;
+        //}
 
         protected PartModule _module;
 
@@ -92,6 +131,7 @@ namespace TweakScale
         // Creates an updater for each module attached to destination part.
         public static IEnumerable<IRescalable> createUpdaters(Part part)
         {
+            Tools.Logf("Creating updaters for {0}", part.partInfo.title);
             foreach (var mod in part.Modules.Cast<PartModule>())
             {
                 var updater = createUpdater(mod);
@@ -107,18 +147,22 @@ namespace TweakScale
         {
             if (module is IRescalable)
             {
+                Tools.Logf("This one's rescalable, just return it!");
                 return module as IRescalable;
             }
             var name = module.GetType().FullName;
             if (ctors.ContainsKey(name))
             {
+                Tools.Logf("Returning {0}", module.GetType().FullName);
                 return ctors[name](module);
             }
             name = module.GetType().Name;
             if (ctors.ContainsKey(name))
             {
+                Tools.Logf("Returning {0}", module.GetType().Name);
                 return ctors[name](module);
             }
+            Tools.Logf("Dafuq? No updater for {0}", module.GetType().FullName);
             return null;
         }
 
