@@ -38,13 +38,20 @@ namespace TweakScale
             var scales = AssemblyLoader
                 .loadedAssemblies
                 .Where(a => a.assembly.GetType("TweakScale.TweakScale") != null || a.assembly.GetType("GoodspeedTweakScale") != null)
-                .Where(a => !Tools.KSPRelativePath(a.assembly.CodeBase).StartsWith("GameData\\TweakScale", StringComparison.InvariantCultureIgnoreCase))
                 .ToArray();
 
-            foreach (var scale in scales)
+            if (scales.Length <= 1)
+                return; // How the **** did this run with no Scale.dll loaded?
+
+            foreach (var scale in scales.Where(IsNotCanonicalTweakScale))
             {
                 RemoveAssembly(scale);
             }
+        }
+
+        static bool IsNotCanonicalTweakScale(AssemblyLoader.LoadedAssembly asm)
+        {
+            return !Tools.KSPRelativePath(asm.assembly.CodeBase).StartsWith("GameData\\TweakScale", StringComparison.InvariantCultureIgnoreCase);
         }
 
         void RemoveAssembly(AssemblyLoader.LoadedAssembly asm)

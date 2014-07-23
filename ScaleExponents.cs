@@ -19,7 +19,7 @@ namespace TweakScale
     {
         private string _id;
         private string _name;
-        private Dictionary<string, string> _exponents;
+        private Dictionary<string, Tuple<string, bool>> _exponents;
         private Dictionary<string, ScaleExponents> _children;
 
         private static Dictionary<string, ScaleExponents> globalList;
@@ -64,7 +64,7 @@ namespace TweakScale
             _id = source._id;
             if (source == null)
             {
-                _exponents = new Dictionary<string, string>();
+                _exponents = new Dictionary<string, Tuple<string, bool>>();
                 _children = new Dictionary<string, ScaleExponents>();
             }
             else
@@ -85,12 +85,19 @@ namespace TweakScale
             {
                 _id = "";
             }
-            _exponents = new Dictionary<string, string>();
+            _exponents = new Dictionary<string, Tuple<string, bool>>();
             _children = new Dictionary<string, ScaleExponents>();
 
             foreach (var value in node.values.OfType<ConfigNode.Value>().Where(a=>a.name != "name"))
             {
-                _exponents[value.name] = value.value;
+                if (value.name.StartsWith("!"))
+                {
+                    _exponents[value.name.Substring(1)] = Tuple.Create(value.value, true);
+                }
+                else
+                {
+                    _exponents[value.name] = Tuple.Create(value.value, false);
+                }
             }
 
             foreach (var childNode in node.nodes.OfType<ConfigNode>())
@@ -165,7 +172,7 @@ namespace TweakScale
                 return currentValue;
             }
 
-            var exponentValue = _exponents[name];
+            var exponentValue = _exponents[name].Item1;
             if (exponentValue.Contains(','))
             {
                 if (factor.index == -1)
@@ -229,13 +236,11 @@ namespace TweakScale
                 return;
             }
 
-            foreach (var rawFieldName in Exponents)
+            foreach (var fieldName in Exponents)
             {
-                string fieldName = rawFieldName;
                 var baseObjTmp = baseObj;
-                if (fieldName.StartsWith("!"))
+                if (_exponents[fieldName].Item2)
                 {
-                    fieldName = fieldName.Substring(1);
                     baseObjTmp = null;
                 }
                 var value = FieldChanger<double>.CreateFromName(obj, fieldName);
@@ -246,12 +251,12 @@ namespace TweakScale
                 if (baseObjTmp == null)
                 {
                     // No prefab from which to grab values. Use relative scaling.
-                    value.Value = Rescale(value.Value, value.Value, rawFieldName, factor, relative: true);
+                    value.Value = Rescale(value.Value, value.Value, fieldName, factor, relative: true);
                 }
                 else
                 {
                     var baseValue = FieldChanger<double>.CreateFromName(baseObj, fieldName);
-                    value.Value = Rescale(value.Value, baseValue.Value, rawFieldName, factor);
+                    value.Value = Rescale(value.Value, baseValue.Value, fieldName, factor);
                 }
             }
 

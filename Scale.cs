@@ -259,7 +259,6 @@ namespace TweakScale
 
         public override void OnStart(StartState state)
         {
-            Tools.Logf(MethodBase.GetCurrentMethod().Name);
             base.OnStart(state);
             Setup();
         }
