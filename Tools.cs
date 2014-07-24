@@ -78,7 +78,7 @@ namespace TweakScale
         /// <param name="args">The arguments to the format.</param>
         public static void Logf(string format, params object[] args)
         {
-            Debug.Log("[TweakScale (" + Tools.KSPRelativePath(Assembly.GetExecutingAssembly().CodeBase) + ")] " + string.Format(format, args));
+            Debug.Log("[TweakScale] " + string.Format(format, args));
         }
 
         /// <summary>
@@ -88,17 +88,7 @@ namespace TweakScale
         /// <param name="args">The arguments to the format.</param>
         public static void LogWf(string format, params object[] args)
         {
-            Debug.LogWarning("[TweakScale (" + Tools.KSPRelativePath(Assembly.GetExecutingAssembly().CodeBase) + ")] " + string.Format(format, args));
-        }
-
-        /// <summary>
-        /// Gets the relative path from the folder where KSP is to <paramref name="path"/>.
-        /// </summary>
-        /// <param name="path">The absolute path to relativize.</param>
-        /// <returns>The relativized path.</returns>
-        public static string KSPRelativePath(string path)
-        {
-            return PathEx.MakeRelativePath("file:///" + KSPUtil.ApplicationRootPath, path);
+            Debug.LogWarning("[TweakScale Warning] " + string.Format(format, args));
         }
 
         /// <summary>
