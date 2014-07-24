@@ -58,7 +58,7 @@ namespace TweakScale
 
             Func<PartModule, IRescalable> creator = (PartModule pm) => (IRescalable)c.Invoke(new[] { pm });
 
-            m.Invoke(null, new object[] { arg.FullName, creator });
+            m.Invoke(null, new object[] { arg, creator });
         }
 
         private static bool IsRescalable(Type t)
@@ -78,29 +78,18 @@ namespace TweakScale
     public abstract class TweakScaleUpdater : IRescalable
     {
         // Every kind of updater is registered here, and the correct kind of updater is created for each PartModule.
-        static Dictionary<string, Func<PartModule, IRescalable>> ctors = new Dictionary<string, Func<PartModule, IRescalable>>();
+        static Dictionary<Type, Func<PartModule, IRescalable>> ctors = new Dictionary<Type, Func<PartModule, IRescalable>>();
 
         /// <summary>
         /// Registers an updater for partmodules the name <paramref name="moduleName"/>.
         /// </summary>
         /// <param name="moduleName">Name of the PartModule type to update.</param>
         /// <param name="creator">A function that creates an updater for this PartModule type.</param>
-        static public void RegisterUpdater(string moduleName, Func<PartModule, IRescalable> creator)
+        static public void RegisterUpdater(Type pm, Func<PartModule, IRescalable> creator)
         {
-            ctors[moduleName] = creator;
+            Tools.Logf("Registering updater for {0}", pm.FullName);
+            ctors[pm] = creator;
         }
-
-        /// <summary>
-        /// Registers an updater for modules of the type <typeparamref name="ModuleType"/>.
-        /// </summary>
-        /// <typeparam name="ModuleType">The type of PartModule to update.</typeparam>
-        /// <param name="creator">A function that creates an updater for this PartModule type.</param>
-        //static public void RegisterUpdater<ModuleType>(Func<ModuleType, IRescalable> creator) where ModuleType : PartModule
-        //{
-        //    MonoBehaviour.print("Registering module updater: " + typeof(ModuleType).FullName);
-        //    ctors[typeof(ModuleType).FullName] = a => a is ModuleType ? creator(a as ModuleType) : null;
-        //    ctors[typeof(ModuleType).Name] = a => a is ModuleType ? creator(a as ModuleType) : null;
-        //}
 
         protected PartModule _module;
 
@@ -149,15 +138,9 @@ namespace TweakScale
             {
                 return module as IRescalable;
             }
-            var name = module.GetType().FullName;
-            if (ctors.ContainsKey(name))
+            if (ctors.ContainsKey(module.GetType()))
             {
-                return ctors[name](module);
-            }
-            name = module.GetType().Name;
-            if (ctors.ContainsKey(name))
-            {
-                return ctors[name](module);
+                return ctors[module.GetType()](module);
             }
             return null;
         }
@@ -165,7 +148,7 @@ namespace TweakScale
         public abstract void OnRescale(ScalingFactor factor);
     }
 
-    abstract public class TweakScaleUpdater<T> : TweakScaleUpdater where T : PartModule
+    abstract public class TweakScaleUpdater<T> : TweakScaleUpdater, IRescalable<T> where T : PartModule
     {
         public TweakScaleUpdater(T pm)
             : base(pm)

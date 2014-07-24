@@ -59,7 +59,7 @@ namespace TweakScale
         private static ScaleConfig GetScaleConfig(string name)
         {
             var config = GameDatabase.Instance.GetConfigs("SCALETYPE").FirstOrDefault(a => a.name == name);
-            if (config == null)
+            if (config == null && name != "default")
             {
                 Tools.LogWf("No SCALETYPE with name {0}", name);
             }
