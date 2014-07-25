@@ -36,7 +36,7 @@ namespace TweakScale
             }
         }
     }
-    public class TweakScale : PartModule
+    public class TweakScale : PartModule, IPartCostModifier
     {
         /// <summary>
         /// The selected scale. Different from currentScale only for destination single update, where currentScale is set to match this.
@@ -119,7 +119,13 @@ namespace TweakScale
         public ScaleConfig config;
 
         /// <summary>
-        /// The ConfigNode that belongs to the part this module affects.
+        /// Cost of unscaled, empty part.
+        /// </summary>
+        [KSPField(isPersistant = true)]
+        public float dryCost;
+
+        /// <summary>
+        /// The ConfigNode that belongs to the part this modules affects.
         /// </summary>
         private ConfigNode PartNode
         {
@@ -131,7 +137,7 @@ namespace TweakScale
         }
 
         /// <summary>
-        /// The ConfigNode that belongs to this module.
+        /// The ConfigNode that belongs to this modules.
         /// </summary>
         public ConfigNode moduleNode
         {
@@ -231,6 +237,8 @@ namespace TweakScale
             prefabPart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
 
             updaters = TweakScaleUpdater.createUpdaters(part).ToArray();
+
+            dryCost = part.partInfo.cost - prefabPart.Resources.Cast<PartResource>().Aggregate(0.0f, (a, b) => a + (float)b.amount * b.info.unitCost);
 
             SetupFromConfig(config = new ScaleConfig(moduleNode));
 
@@ -339,7 +347,7 @@ namespace TweakScale
                 }
                 else
                 {
-                    Tools.Logf("Error scaling part. Node {0} does not have counterpart in base part.", node.id);
+                    Tools.LogWf("Error scaling part. Node {0} does not have counterpart in base part.", node.id);
                 }
             }
             rescaleNode(part.srfAttachNode, prefabPart.srfAttachNode);
@@ -377,7 +385,7 @@ namespace TweakScale
                 }
                 else
                 {
-                    Tools.Logf("Error scaling part. Node {0} does not have counterpart in base part.", node.id);
+                    Tools.LogWf("Error scaling part. Node {0} does not have counterpart in base part.", node.id);
                 }
             }
 
@@ -436,7 +444,7 @@ namespace TweakScale
             }
             if (this != part.Modules.OfType<TweakScale>().First())
             {
-                Tools.Logf("Duplicate TweakScale module on part [{0}] {1}", part.partInfo.name, part.partInfo.title);
+                Tools.LogWf("Duplicate TweakScale module on part [{0}] {1}", part.partInfo.name, part.partInfo.title);
                 Fields["tweakScale"].guiActiveEditor = false;
                 Fields["tweakName"].guiActiveEditor = false;
                 duplicate = true;
@@ -467,6 +475,11 @@ namespace TweakScale
                     updateByWidth(false);
                 }
             }
+        }
+
+        public float GetModuleCost()
+        {
+            return dryCost - part.partInfo.cost;
         }
     }
 }

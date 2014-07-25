@@ -136,7 +136,7 @@ namespace TweakScale
 
             if (_scaleFactors.Length != _scaleNames.Length)
             {
-                Tools.Logf("Wrong number of scaleFactors compared to scaleNames: {0} vs {1}", _scaleFactors.Length, _scaleNames.Length);
+                Tools.LogWf("Wrong number of scaleFactors compared to scaleNames: {0} vs {1}", _scaleFactors.Length, _scaleNames.Length);
             }
 
             if (techRequired.Length < _scaleFactors.Length)

@@ -31,11 +31,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>E:\Kerbal Space Program\KSP_32_Data\Managed\Assembly-CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>E:\Kerbal Space Program\KSP_32_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>E:\KSP_Test\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="KSPAPIExtensions">
       <HintPath>..\lib\KSPAPIExtensions.dll</HintPath>
@@ -50,8 +46,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
-      <HintPath>E:\Kerbal Space Program\KSP_32_Data\Managed\UnityEngine.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>E:\KSP_Test\KSP_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -63,6 +58,10 @@
       <Project>{70d38878-43db-4f6e-8002-45ada5391af7}</Project>
       <Name>Scale</Name>
       <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Scale_Redist\Scale_Redist.csproj">
+      <Project>{2be63d8b-350e-4edd-959c-4b7397984364}</Project>
+      <Name>Scale_Redist</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

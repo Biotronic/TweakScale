@@ -52,24 +52,18 @@ namespace TweakScale
 
         private static void RegisterGenericRescalable(Type resc, Type arg)
         {
-            var m = typeof(TweakScaleUpdater).GetMethod("RegisterUpdater");
-
             var c = resc.GetConstructor(new[] { arg });
+            if (c != null)
+            {
+                Func<PartModule, IRescalable> creator = (PartModule pm) => (IRescalable)c.Invoke(new[] { pm });
 
-            Func<PartModule, IRescalable> creator = (PartModule pm) => (IRescalable)c.Invoke(new[] { pm });
-
-            m.Invoke(null, new object[] { arg, creator });
-        }
-
-        private static bool IsRescalable(Type t)
-        {
-            return t.GetInterfaces()
-                .Contains(typeof(IRescalable));
+                TweakScaleUpdater.RegisterUpdater(arg, creator);
+            }
         }
 
         private static bool IsGenericRescalable(Type t)
         {
-            return t.GetInterfaces()
+            return !t.IsGenericType && t.GetInterfaces()
                 .Any(a => a.IsGenericType &&
                 a.GetGenericTypeDefinition() == typeof(IRescalable<>));
         }
@@ -117,14 +111,13 @@ namespace TweakScale
             _module = module;
         }
 
-        // Creates an updater for each module attached to destination part.
+        // Creates an updater for each modules attached to destination part.
         public static IEnumerable<IRescalable> createUpdaters(Part part)
         {
-            Tools.Logf("Creating updaters for {0}", part.partInfo.title);
             foreach (var mod in part.Modules.Cast<PartModule>())
             {
                 var updater = createUpdater(mod);
-                if ((object)updater != null)
+                if (updater != null)
                 {
                     yield return updater;
                 }

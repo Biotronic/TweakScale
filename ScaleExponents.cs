@@ -51,7 +51,7 @@ namespace TweakScale
         }
 
         /// <summary>
-        /// Creates module copy of the ScaleExponents.
+        /// Creates modules copy of the ScaleExponents.
         /// </summary>
         /// <returns>A copy of the object on which the function is called.</returns>
         private ScaleExponents Clone()
@@ -121,7 +121,7 @@ namespace TweakScale
         {
             if (destination._id != source._id)
             {
-                Tools.Logf("Wrong merge target! A name {0}, B name {1}", destination._id, source._id);
+                Tools.LogWf("Wrong merge target! A name {0}, B name {1}", destination._id, source._id);
             }
             foreach (var value in source._exponents)
             {
@@ -168,7 +168,7 @@ namespace TweakScale
         {
             if (!_exponents.ContainsKey(name))
             {
-                Tools.Logf("No exponent found for {0}.{1}", this._id, name);
+                Tools.LogWf("No exponent found for {0}.{1}", this._id, name);
                 return currentValue;
             }
 
@@ -177,17 +177,17 @@ namespace TweakScale
             {
                 if (factor.index == -1)
                 {
-                    Tools.Logf("Value list used for freescale part exponent field {0}: {1}", name, exponentValue);
+                    Tools.LogWf("Value list used for freescale part exponent field {0}: {1}", name, exponentValue);
                     return currentValue;
                 }
                 var values = Tools.ConvertString(exponentValue, new double[] { });
                 if (values.Length == 0)
                 {
-                    Tools.Logf("No valid values found for {0}: {1}", name, exponentValue);
+                    Tools.LogWf("No valid values found for {0}: {1}", name, exponentValue);
                 }
                 if (values.Length <= factor.index)
                 {
-                    Tools.Logf("Too few values given for {0}. Expected at least {1}, got {2}: {3}", name, factor.index+1, values.Length, exponentValue);
+                    Tools.LogWf("Too few values given for {0}. Expected at least {1}, got {2}: {3}", name, factor.index + 1, values.Length, exponentValue);
                 }
                 return values[factor.index];
             }
@@ -216,17 +216,17 @@ namespace TweakScale
         {
             if (_id == "" && obj is PartModule)
             {
-                Tools.Logf("Unnamed ScaleExponents are intended for Parts, not PartModules.");
+                Tools.LogWf("Unnamed ScaleExponents are intended for Parts, not PartModules.");
                 return;
             }
             if (_id != "" && obj is Part)
             {
-                Tools.Logf("Named ScaleExponents are intended for PartModules, not Parts.");
+                Tools.LogWf("Named ScaleExponents are intended for PartModules, not Parts.");
                 return;
             }
             if (obj is PartModule && obj.GetType().Name != _id)
             {
-                Tools.Logf("This ScaleExponent is intended for {0}, not {1}", _id, obj.GetType().Name);
+                Tools.LogWf("This ScaleExponent is intended for {0}, not {1}", _id, obj.GetType().Name);
                 return;
             }
 
@@ -326,11 +326,11 @@ namespace TweakScale
                 exps[""].UpdateFields(part, basePart, factor);
             }
 
-            var modulesAndExponents = part.Modules.OfType<PartModule>().Zip(basePart.Modules.OfType<PartModule>()).Join(exps, module => module.Item1.moduleName, exponents => exponents.Key, (module, exponent) => Tuple.Create(module, exponent.Value));
+            var modulesAndExponents = part.Modules.Cast<PartModule>().Zip(basePart.Modules.Cast<PartModule>()).Join(exps, modules => modules.Item1.moduleName, exponents => exponents.Key, (modules, exponent) => Tuple.Create(modules, exponent.Value)).ToArray();
 
-            foreach (var item in modulesAndExponents)
+            foreach (var modExp in modulesAndExponents)
             {
-                item.Item2.UpdateFields(item.Item1.Item1, item.Item1.Item2, factor);
+                modExp.Item2.UpdateFields(modExp.Item1.Item1, modExp.Item1.Item2, factor);
             }
         }
 

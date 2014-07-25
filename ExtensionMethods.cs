@@ -105,7 +105,7 @@ namespace TweakScale
         /// </summary>
         /// <typeparam name="T">The type of values in <paramref name="source"/>.</typeparam>
         /// <param name="source">The list to check for duplicates.</param>
-        /// <returns>A list of each duplicate exponentValue in <paramref name="source"/>, but only one of each item.</returns>
+        /// <returns>A list of each duplicate exponentValue in <paramref name="source"/>, but only one of each modExp.</returns>
         public static IEnumerable<T> Duplicates<T>(this IEnumerable<T> source)
         {
             return source

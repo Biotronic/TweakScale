@@ -114,7 +114,7 @@ namespace TweakScale
             {
                 if (ex is InvalidCastException || ex is FormatException || ex is OverflowException || ex is ArgumentNullException)
                 {
-                    Logf("Failed to convert string value \"{0}\" to type {1}", cfgValue, typeof(T).Name);
+                    LogWf("Failed to convert string value \"{0}\" to type {1}", cfgValue, typeof(T).Name);
                     return defaultValue;
                 }
                 throw;
@@ -155,7 +155,7 @@ namespace TweakScale
             {
                 if (ex is InvalidCastException || ex is FormatException || ex is OverflowException || ex is ArgumentNullException)
                 {
-                    Logf("Failed to convert string value \"{0}\" to type {1}", value, typeof(T).Name);
+                    LogWf("Failed to convert string value \"{0}\" to type {1}", value, typeof(T).Name);
                     return defaultValue;
                 }
                 throw;

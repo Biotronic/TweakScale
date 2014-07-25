@@ -4,18 +4,9 @@ using TweakScale;
 
 namespace TweakScale_RealFuels
 {
-    [KSPAddon(KSPAddon.Startup.EveryScene, false)]
-    internal class MyEditorRegistrationAddon : TweakScale.RescalableRegistratorAddon
+    class TweakScaleModularFuelTanksUpdater : TweakScaleUpdater<RealFuels.ModuleFuelTanks>
     {
-        public override void OnStart()
-        {
-            TweakScale.TweakScaleUpdater.RegisterUpdater((RealFuels.ModuleFuelTanks mod) => new TweakScaleRealFuelUpdater(mod));
-        }
-    }
-
-    class TweakScaleRealFuelUpdater : TweakScaleUpdater<RealFuels.ModuleFuelTanks>
-    {
-        public TweakScaleRealFuelUpdater(RealFuels.ModuleFuelTanks pm)
+        public TweakScaleModularFuelTanksUpdater(RealFuels.ModuleFuelTanks pm)
             : base(pm)
         {
         }
@@ -23,6 +14,11 @@ namespace TweakScale_RealFuels
         override public void OnRescale(ScalingFactor factor)
         {
             Module.ChangeVolume(BaseModule.volume * factor.absolute.cubic);
+            foreach (PartResource f in Part.Resources)
+            {
+                f.amount /= factor.relative.cubic;
+                f.maxAmount /= factor.relative.cubic;
+            }
         }
     }
 }
