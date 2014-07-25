@@ -63,12 +63,6 @@ namespace TweakScale
         /// </summary>
         [KSPField(isPersistant = true)]
         public float defaultScale = -1;
-        
-        /// <summary>
-        /// The default index into scale values array. Mostly same as above.
-        /// </summary>
-        [KSPField(isPersistant = true)]
-        public int defaultName = -1;
 
         /// <summary>
         /// Whether the part should be freely scalable or limited to destination list of allowed values.
@@ -216,12 +210,16 @@ namespace TweakScale
                 range.incrementSmall = (float)Math.Round(range.incrementLarge / 10, 2);
                 this.Fields["tweakScale"].guiUnits = config.suffix;
             }
-            else if (config.scaleFactors.Length > 1)
+            else
             {
-                this.Fields["tweakName"].guiActiveEditor = true;
+                this.Fields["tweakName"].guiActiveEditor = config.scaleFactors.Length > 1;
                 var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
-                scaleFactors = config.scaleFactors;
-                options.options = config.scaleNames;
+
+                if (scaleFactors.Length > 0)
+                {
+                    scaleFactors = config.scaleFactors;
+                    options.options = config.scaleNames;
+                }
             }
         }
 
@@ -234,6 +232,7 @@ namespace TweakScale
             {
                 return;
             }
+
             prefabPart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
 
             updaters = TweakScaleUpdater.createUpdaters(part).ToArray();
@@ -247,7 +246,8 @@ namespace TweakScale
                 tweakScale = currentScale = defaultScale;
                 if (!isFreeScale)
                 {
-                    tweakName = defaultName = Tools.ClosestIndex(defaultScale, scaleFactors);
+                    tweakName = Tools.ClosestIndex(defaultScale, scaleFactors);
+                    tweakScale = scaleFactors[tweakName];
                 }
             }
             else
@@ -255,15 +255,16 @@ namespace TweakScale
                 if (!isFreeScale)
                 {
                     tweakName = Tools.ClosestIndex(tweakScale, scaleFactors);
+                    tweakScale = scaleFactors[tweakName];
                 }
                 updateByWidth(false);
-            }
-
-            foreach (var updater in updaters)
-            {
-                updater.OnRescale(scalingFactor);
+                foreach (var updater in updaters)
+                {
+                    updater.OnRescale(scalingFactor);
+                }
             }
         }
+
 
         public override void OnStart(StartState state)
         {
@@ -317,7 +318,7 @@ namespace TweakScale
             else
             {
                 var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
-                node.size = (int)(baseNode.size + (tweakName - defaultName) / (float)options.options.Length * 5);
+                node.size = (int)(baseNode.size + (tweakName - Tools.ClosestIndex(defaultScale, config.allScaleFactors)) / (float)config.allScaleFactors.Length * 5);
             }
             if (node.size < 0)
             {
@@ -450,6 +451,7 @@ namespace TweakScale
                 duplicate = true;
                 return;
             }
+
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
             {
                 bool changed = isFreeScale ? tweakScale != currentScale : currentScale != scaleFactors[tweakName];

@@ -32,6 +32,7 @@ namespace TweakScale
             ConfigNode[] techs = thisScenario.GetNodes("Tech");
 
             unlockedTechs = techs.Select(a => a.GetValue("id")).ToHashSet();
+            unlockedTechs.Add("");
         }
 
         public static bool IsUnlocked(string techId)
@@ -93,6 +94,14 @@ namespace TweakScale
         public string suffix = "m";
         public string name;
 
+        public float[] allScaleFactors
+        {
+            get
+            {
+                return _scaleFactors;
+            }
+        }
+
         public float[] scaleFactors
         {
             get
@@ -147,7 +156,7 @@ namespace TweakScale
             var tmpScale = Tools.ConfigValue(config, "defaultScale", defaultValue: source.defaultScale);
             if (!isFreeScale)
             {
-                tmpScale = Tools.Closest(tmpScale, scaleFactors);
+                tmpScale = Tools.Closest(tmpScale, allScaleFactors);
             }
             defaultScale = Tools.clamp(tmpScale, minValue, maxValue);
 
