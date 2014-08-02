@@ -102,10 +102,17 @@ namespace TweakScale
         /// </summary>
         private IRescalable[] updaters;
 
+        private enum Tristate
+        {
+            True,
+            False,
+            Unset
+        }
+
         /// <summary>
         /// Whether this instance of TweakScale is the first. If not, log an error and make sure the TweakScale modules don't harmfully interact.
         /// </summary>
-        private bool duplicate = false;
+        private Tristate duplicate = Tristate.Unset;
 
         /// <summary>
         /// The Config for this part.
@@ -401,7 +408,7 @@ namespace TweakScale
                     if (child.srfAttachNode != null && child.srfAttachNode.attachedPart == part) // part is attached to us, but not on destination node
                     {
                         Vector3 attachedPosition = child.transform.localPosition + child.transform.localRotation * child.srfAttachNode.position;
-                        Vector3 targetPosition = attachedPosition * scalingFactor.absolute.linear;
+                        Vector3 targetPosition = attachedPosition * scalingFactor.relative.linear;
                         child.transform.Translate(targetPosition - attachedPosition, part.transform);
                     }
                 }
@@ -439,17 +446,21 @@ namespace TweakScale
 
         public void Update()
         {
-            if (duplicate)
+            if (duplicate != Tristate.False)
             {
-                return;
-            }
-            if (this != part.Modules.OfType<TweakScale>().First())
-            {
-                Tools.LogWf("Duplicate TweakScale module on part [{0}] {1}", part.partInfo.name, part.partInfo.title);
-                Fields["tweakScale"].guiActiveEditor = false;
-                Fields["tweakName"].guiActiveEditor = false;
-                duplicate = true;
-                return;
+                if (duplicate == Tristate.True)
+                {
+                    return;
+                }
+                if (this != part.Modules.OfType<TweakScale>().First())
+                {
+                    Tools.LogWf("Duplicate TweakScale module on part [{0}] {1}", part.partInfo.name, part.partInfo.title);
+                    Fields["tweakScale"].guiActiveEditor = false;
+                    Fields["tweakName"].guiActiveEditor = false;
+                    duplicate = Tristate.True;
+                    return;
+                }
+                duplicate = Tristate.False;
             }
 
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
