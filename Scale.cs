@@ -36,6 +36,7 @@ namespace TweakScale
             }
         }
     }
+
     public class TweakScale : PartModule, IPartCostModifier
     {
         /// <summary>
@@ -244,8 +245,6 @@ namespace TweakScale
 
             updaters = TweakScaleUpdater.createUpdaters(part).ToArray();
 
-            dryCost = part.partInfo.cost - prefabPart.Resources.Cast<PartResource>().Aggregate(0.0f, (a, b) => a + (float)b.amount * b.info.unitCost);
-
             SetupFromConfig(config = new ScaleConfig(moduleNode));
 
             if (currentScale < 0f)
@@ -256,6 +255,7 @@ namespace TweakScale
                     tweakName = Tools.ClosestIndex(defaultScale, scaleFactors);
                     tweakScale = scaleFactors[tweakName];
                 }
+                dryCost = (float)(part.partInfo.cost - prefabPart.Resources.Cast<PartResource>().Aggregate(0.0, (a, b) => a + b.amount * b.info.unitCost));
             }
             else
             {
@@ -492,7 +492,11 @@ namespace TweakScale
 
         public float GetModuleCost()
         {
-            return dryCost - part.partInfo.cost;
+            if (currentScale == -1)
+            {
+                Setup();
+            }
+            return (float)(dryCost - part.partInfo.cost + part.Resources.Cast<PartResource>().Aggregate(0.0, (a, b) => a + b.amount * b.info.unitCost));
         }
     }
 }
