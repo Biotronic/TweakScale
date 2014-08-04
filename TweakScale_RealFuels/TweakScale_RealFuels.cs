@@ -4,16 +4,34 @@ using TweakScale;
 
 namespace TweakScale_RealFuels
 {
-    class TweakScaleModularFuelTanksUpdater : TweakScaleUpdater<RealFuels.ModuleFuelTanks>
+    class TweakScaleModularFuelTanksUpdater : IRescalable<RealFuels.ModuleFuelTanks>
     {
-        public TweakScaleModularFuelTanksUpdater(RealFuels.ModuleFuelTanks pm)
-            : base(pm)
+        private RealFuels.ModuleFuelTanks _module;
+
+        private RealFuels.ModuleFuelTanks Module
         {
+            get
+            {
+                return _module;
+            }
         }
 
-        override public void OnRescale(ScalingFactor factor)
+        private Part Part
         {
-            Module.ChangeVolume(BaseModule.volume * factor.absolute.cubic);
+            get
+            {
+                return _module.part;
+            }
+        }
+
+        public TweakScaleModularFuelTanksUpdater(RealFuels.ModuleFuelTanks pm)
+        {
+            _module = pm;
+        }
+
+        public void OnRescale(ScalingFactor factor)
+        {
+            Module.ChangeVolume(Module.volume * factor.relative.cubic);
             foreach (PartResource f in Part.Resources)
             {
                 f.amount /= factor.relative.cubic;
