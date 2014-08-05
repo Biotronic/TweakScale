@@ -496,7 +496,7 @@ namespace TweakScale
             {
                 Setup();
             }
-            return (float)(dryCost - part.partInfo.cost + part.Resources.Cast<PartResource>().Aggregate(0.0, (a, b) => a + b.amount * b.info.unitCost));
+            return (float)(dryCost - part.partInfo.cost + part.Resources.Cast<PartResource>().Aggregate(0.0, (a, b) => a + b.maxAmount * b.info.unitCost));
         }
     }
 }
