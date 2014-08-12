@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -78,7 +79,7 @@ namespace TweakScale
         /// <param name="args">The arguments to the format.</param>
         public static void Logf(string format, params object[] args)
         {
-            Debug.Log("[TweakScale] " + string.Format(format, args));
+            Debug.Log("[TweakScale] " + string.Format(format, args.Select(a => a.preFormat()).ToArray()));
         }
 
         /// <summary>
@@ -88,7 +89,29 @@ namespace TweakScale
         /// <param name="args">The arguments to the format.</param>
         public static void LogWf(string format, params object[] args)
         {
-            Debug.LogWarning("[TweakScale Warning] " + string.Format(format, args));
+            Debug.LogWarning("[TweakScale Warning] " + string.Format(format, args.Select(a => a.preFormat()).ToArray()));
+        }
+
+        /// <summary>
+        /// Formats certain types to make them more readable.
+        /// </summary>
+        /// <param name="obj">The object to format.</param>
+        /// <returns>A more readable representation of <paramref name="obj"/>>.</returns>
+        public static object preFormat(this object obj)
+        {
+            if (obj == null)
+            {
+                return "null";
+            }
+            if (obj is IEnumerable)
+            {
+                if (obj.GetType().GetMethod("ToString", new Type[] { }).IsOverride())
+                {
+                    var e = obj as IEnumerable;
+                    return string.Format("[{0}]", string.Join(", ", e.Cast<object>().Select(a => a.preFormat().ToString()).ToArray()));
+                }
+            }
+            return obj;
         }
 
         /// <summary>

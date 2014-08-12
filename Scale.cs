@@ -12,6 +12,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 */
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -152,7 +153,7 @@ namespace TweakScale
         /// <summary>
         /// The current scaling factor.
         /// </summary>
-        private ScalingFactor scalingFactor
+        public ScalingFactor scalingFactor
         {
             get
             {
@@ -247,23 +248,22 @@ namespace TweakScale
 
             SetupFromConfig(config = new ScaleConfig(moduleNode));
 
-            if (currentScale < 0f)
+
+            var doUpdate = currentScale < 0f;
+            if (doUpdate)
             {
                 tweakScale = currentScale = defaultScale;
-                if (!isFreeScale)
-                {
-                    tweakName = Tools.ClosestIndex(defaultScale, scaleFactors);
-                    tweakScale = scaleFactors[tweakName];
-                }
                 dryCost = (float)(part.partInfo.cost - prefabPart.Resources.Cast<PartResource>().Aggregate(0.0, (a, b) => a + b.amount * b.info.unitCost));
             }
-            else
+
+            if (!isFreeScale && scaleFactors.Length != 0)
             {
-                if (!isFreeScale)
-                {
-                    tweakName = Tools.ClosestIndex(tweakScale, scaleFactors);
-                    tweakScale = scaleFactors[tweakName];
-                }
+                tweakName = Tools.ClosestIndex(tweakScale, scaleFactors);
+                tweakScale = scaleFactors[tweakName];
+            }
+
+            if (!doUpdate)
+            {
                 updateByWidth(false);
                 foreach (var updater in updaters)
                 {
@@ -444,6 +444,7 @@ namespace TweakScale
             }
         }
 
+        private bool invalidCfg = false;
         public void Update()
         {
             if (duplicate != Tristate.False)
@@ -461,6 +462,16 @@ namespace TweakScale
                     return;
                 }
                 duplicate = Tristate.False;
+            }
+
+            if (scaleFactors.Length == 0)
+            {
+                if (!invalidCfg)
+                {
+                    invalidCfg = true;
+                    Tools.LogWf("{0}({1}) has no valid scale factors. This is probably caused by an invalid TweakScale configuration for the part.", part.name, part.partInfo.title);
+                }
+                return;
             }
 
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
@@ -487,6 +498,11 @@ namespace TweakScale
                 {
                     updateByWidth(false);
                 }
+            }
+
+            foreach (var upd in updaters.OfType<IUpdateable>())
+            {
+                upd.OnUpdate();
             }
         }
 

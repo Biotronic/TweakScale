@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace TweakScale
 {
@@ -26,8 +28,8 @@ namespace TweakScale
         /// <typeparam name="T1">The type of the elements in the first IEnumerable.</typeparam>
         /// <typeparam name="T2">The type of the elements in the second IEnumerable.</typeparam>
         /// <typeparam name="TResult">The type of elements in the resulting IEnumerable.</typeparam>
-        /// <param name="destination">The first IEnumerable.</param>
-        /// <param name="source">The second IEnumerable.</param>
+        /// <param name="a">The first IEnumerable.</param>
+        /// <param name="b">The second IEnumerable.</param>
         /// <param name="fn">The function that creates the elements that will be in the result.</param>
         /// <returns></returns>
         public static IEnumerable<TResult> Zip<T1, T2, TResult>(this IEnumerable<T1> a, IEnumerable<T2> b, Func<T1, T2, TResult> fn)
@@ -39,6 +41,75 @@ namespace TweakScale
             {
                 yield return fn(v1.Current, v2.Current);
             }
+        }
+
+        /// <summary>
+        /// Enumerates two IEnumerables in lockstep.
+        /// </summary>
+        /// <param name="a">The first IEnumerable.</param>
+        /// <param name="b">The second IEnumerable.</param>
+        /// <returns></returns>
+        public static IEnumerable<Tuple<object, object>> Zip(this IEnumerable a, IEnumerable b)
+        {
+            return a.Zip(b, Tuple.Create);
+        }
+
+        /// <summary>
+        /// Enumerates two IEnumerables in lockstep.
+        /// </summary>
+        /// <typeparam name="TResult">The result type.</typeparam>
+        /// <param name="a">The first IEnumerable.</param>
+        /// <param name="b">The second IEnumerable.</param>
+        /// <param name="fn">The function that creates the elements that will be in the result.</param>
+        /// <returns></returns>
+        public static IEnumerable<TResult> Zip<TResult>(this IEnumerable a, IEnumerable b, Func<object, object, TResult> fn)
+        {
+            var v1 = a.GetEnumerator();
+            var v2 = b.GetEnumerator();
+
+            while (v1.MoveNext() && v2.MoveNext())
+            {
+                yield return fn(v1.Current, v2.Current);
+            }
+        }
+
+        /// <summary>
+        /// Because there is no IEnumerable.Count.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <returns></returns>
+        public static int StupidCount(this IEnumerable a)
+        {
+            return a.Cast<object>().Count();
+        }
+
+        /// <summary>
+        /// Looks up a non-public field by its type.
+        /// </summary>
+        /// <typeparam name="T">The type of the field.</typeparam>
+        /// <param name="t">The type on which to perform the lookup.</param>
+        /// <returns>The first field of the given type, or null.</returns>
+        public static FieldInfo GetNonPublicFieldByType<T>(this Type t)
+        {
+            FieldInfo[] f = t.GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
+            foreach (var e in f)
+            {
+                if (e.FieldType == typeof(T))
+                {
+                    return e;
+                }
+            }
+            return null;
+        }
+        
+        /// <summary>
+        /// Checks if a method is overridden.
+        /// </summary>
+        /// <param name="m">The method to check.</param>
+        /// <returns>True if the method is an override, else false.</returns>
+        public static bool IsOverride(this MethodInfo m)
+        {
+            return m.GetBaseDefinition() == m;
         }
 
         /// <summary>
@@ -110,7 +181,7 @@ namespace TweakScale
         {
             return source
                 .GroupBy(a => a)
-                .Where(a => a.Count() > 1)
+                .Where(a => a.StupidCount() > 1)
                 .Select(a => a.Key);
         }
 

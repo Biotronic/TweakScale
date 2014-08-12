@@ -6,11 +6,11 @@ namespace TweakScale
     /// <summary>
     /// Wraps destination FieldInfo or PropertyInfo and provides destination common interface for either.
     /// </summary>
-    /// <typeparam name="T">Pretend the field/property is this type.</typeparam>
+    /// <typeparam name="T">Pretend the mmpfxField/property is this type.</typeparam>
     public abstract class MemberChanger<T>
     {
         /// <summary>
-        /// Get or set the exponentValue of the field/property.
+        /// Get or set the exponentValue of the mmpfxField/property.
         /// </summary>
         public abstract T Value
         {
@@ -19,7 +19,7 @@ namespace TweakScale
         }
 
         /// <summary>
-        /// The actual type of the field/property.
+        /// The actual type of the mmpfxField/property.
         /// </summary>
         public abstract Type MemberType
         {
@@ -27,7 +27,7 @@ namespace TweakScale
         }
 
         /// <summary>
-        /// Creates destination wrapper for the field or property by the specified name.
+        /// Creates destination wrapper for the mmpfxField or property by the specified name.
         /// </summary>
         /// <param name="obj">The object that holds the member to wrap.</param>
         /// <param name="name">The name of the member.</param>
@@ -52,7 +52,7 @@ namespace TweakScale
     /// <summary>
     /// Wraps destination FieldInfo.
     /// </summary>
-    /// <typeparam name="T">Pretend the field is this type.</typeparam>
+    /// <typeparam name="T">Pretend the mmpfxField is this type.</typeparam>
     class FieldChanger<T> : MemberChanger<T>
     {
         private FieldInfo fi;

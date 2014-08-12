@@ -207,7 +207,7 @@ namespace TweakScale
         }
 
         /// <summary>
-        /// Rescale the fields of <paramref name="obj"/> according to the exponents of the ScaleExponents and <paramref name="factor"/>.
+        /// Rescale the field of <paramref name="obj"/> according to the exponents of the ScaleExponents and <paramref name="factor"/>.
         /// </summary>
         /// <param name="obj">The object to rescale.</param>
         /// <param name="baseObj">The corresponding object in the prefab.</param>
@@ -232,7 +232,7 @@ namespace TweakScale
 
             if (obj is IEnumerable)
             {
-                UpdateEnumerable(((IEnumerable)obj).Cast<object>(), ((IEnumerable)baseObj).Cast<object>(), factor);
+                UpdateEnumerable((IEnumerable)obj, (IEnumerable)baseObj, factor);
                 return;
             }
 
@@ -278,48 +278,32 @@ namespace TweakScale
         /// <param name="obj">The list whose items we want to update.</param>
         /// <param name="baseObj">The corresponding list in the prefab.</param>
         /// <param name="factor">The scaling factor.</param>
-        private void UpdateEnumerable(IEnumerable<object> obj, IEnumerable<object> baseObj, ScalingFactor factor)
+        private void UpdateEnumerable(IEnumerable obj, IEnumerable baseObj, ScalingFactor factor)
         {
-            if (baseObj == null || obj.Count() != baseObj.Count())
+            IEnumerable other = baseObj;
+            if (baseObj == null || obj.StupidCount() != baseObj.StupidCount())
             {
-                // Need to resort to relative scaling. 
-                foreach (var item in obj)
-                {
-                    if (_name != "" && _name != "*") // Operate on specific elements, not all.
-                    {
-                        var childName = item.GetType().GetField("name");
-                        if (childName != null)
-                        {
-                            if (childName.FieldType != typeof(string) || (string)childName.GetValue(item) != _name)
-                            {
-                                continue;
-                            }
-                        }
-                    }
-                    UpdateFields(item, null, factor);
-                }
+                other = ((object)null).Repeat().Take(obj.StupidCount());
             }
-            else
+
+            foreach (var item in obj.Zip(other))
             {
-                foreach (var item in obj.Zip(baseObj))
+                if (!string.IsNullOrEmpty(_name) && _name != "*") // Operate on specific elements, not all.
                 {
-                    if (!string.IsNullOrEmpty(_name) && _name != "*") // Operate on specific elements, not all.
+                    var childName = item.Item1.GetType().GetField("name");
+                    if (childName != null)
                     {
-                        var childName = item.Item1.GetType().GetField("name");
-                        if (childName != null)
+                        if (childName.FieldType != typeof(string) || (string)childName.GetValue(item.Item1) != _name)
                         {
-                            if (childName.FieldType != typeof(string) || (string)childName.GetValue(item.Item1) != _name)
-                            {
-                                continue;
-                            }
+                            continue;
                         }
                     }
-                    UpdateFields(item.Item1, item.Item2, factor);
                 }
+                UpdateFields(item.Item1, item.Item2, factor);
             }
         }
 
-        public static void UpdateObject(TweakScale scale, Part part, Part basePart, Dictionary<string, ScaleExponents> exps, ScalingFactor factor)
+        public static void UpdateObject(Part part, Part basePart, Dictionary<string, ScaleExponents> exps, ScalingFactor factor)
         {
             if (exps.ContainsKey(""))
             {
