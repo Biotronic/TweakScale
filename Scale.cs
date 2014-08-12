@@ -253,7 +253,11 @@ namespace TweakScale
             if (doUpdate)
             {
                 tweakScale = currentScale = defaultScale;
-                dryCost = (float)(part.partInfo.cost - prefabPart.Resources.Cast<PartResource>().Aggregate(0.0, (a, b) => a + b.amount * b.info.unitCost));
+                dryCost = (float)(part.partInfo.cost - prefabPart.Resources.Cast<PartResource>().Aggregate(0.0, (a, b) => a + b.maxAmount * b.info.unitCost));
+                if (dryCost < 0)
+                {
+                    dryCost = 0;
+                }
             }
 
             if (!isFreeScale && scaleFactors.Length != 0)
