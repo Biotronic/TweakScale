@@ -214,16 +214,6 @@ namespace TweakScale
         /// <param name="factor">The new scale.</param>
         public void UpdateFields(object obj, object baseObj, ScalingFactor factor)
         {
-            if (_id == "" && obj is PartModule)
-            {
-                Tools.LogWf("Unnamed ScaleExponents are intended for Parts, not PartModules.");
-                return;
-            }
-            if (_id != "" && obj is Part)
-            {
-                Tools.LogWf("Named ScaleExponents are intended for PartModules, not Parts.");
-                return;
-            }
             if (obj is PartModule && obj.GetType().Name != _id)
             {
                 Tools.LogWf("This ScaleExponent is intended for {0}, not {1}", _id, obj.GetType().Name);

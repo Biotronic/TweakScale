@@ -81,7 +81,6 @@ namespace TweakScale
         /// <param name="creator">A function that creates an updater for this PartModule type.</param>
         static public void RegisterUpdater(Type pm, Func<PartModule, IRescalable> creator)
         {
-            Tools.Logf("Registering updater for {0}", pm.FullName);
             ctors[pm] = creator;
         }
 
