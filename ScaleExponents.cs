@@ -305,9 +305,9 @@ namespace TweakScale
 
         public static void UpdateObject(Part part, Part basePart, Dictionary<string, ScaleExponents> exps, ScalingFactor factor)
         {
-            if (exps.ContainsKey(""))
+            if (exps.ContainsKey("Part"))
             {
-                exps[""].UpdateFields(part, basePart, factor);
+                exps["Part"].UpdateFields(part, basePart, factor);
             }
 
             var modulesAndExponents = part.Modules.Cast<PartModule>().Zip(basePart.Modules.Cast<PartModule>()).Join(exps, modules => modules.Item1.moduleName, exponents => exponents.Key, (modules, exponent) => Tuple.Create(modules, exponent.Value)).ToArray();
