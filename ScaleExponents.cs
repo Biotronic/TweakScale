@@ -85,6 +85,16 @@ namespace TweakScale
             {
                 _id = "";
             }
+
+            if (IsExponentBlock(node))
+            {
+                if (string.IsNullOrEmpty(_id))
+                {
+                    _id = "Part";
+                    _name = "Part";
+                }
+            }
+
             _exponents = new Dictionary<string, Tuple<string, bool>>();
             _children = new Dictionary<string, ScaleExponents>();
 
@@ -295,10 +305,6 @@ namespace TweakScale
 
         public static void UpdateObject(Part part, Part basePart, Dictionary<string, ScaleExponents> exps, ScalingFactor factor)
         {
-            if (exps.ContainsKey(""))
-            {
-                exps[""].UpdateFields(part, basePart, factor);
-            }
             if (exps.ContainsKey("Part"))
             {
                 exps["Part"].UpdateFields(part, basePart, factor);
