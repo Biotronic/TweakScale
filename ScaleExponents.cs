@@ -295,6 +295,10 @@ namespace TweakScale
 
         public static void UpdateObject(Part part, Part basePart, Dictionary<string, ScaleExponents> exps, ScalingFactor factor)
         {
+            if (exps.ContainsKey(""))
+            {
+                exps[""].UpdateFields(part, basePart, factor);
+            }
             if (exps.ContainsKey("Part"))
             {
                 exps["Part"].UpdateFields(part, basePart, factor);
