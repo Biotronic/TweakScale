@@ -184,6 +184,10 @@ namespace TweakScale
 
         private void UpdateParticleEmitter(KSPParticleEmitter pe)
         {
+            if (pe == null)
+            {
+                return;
+            }
             var factor = _ts.scalingFactor;
 
             if (!_scales.ContainsKey(pe))

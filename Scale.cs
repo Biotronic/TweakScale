@@ -1,16 +1,4 @@
 using KSPAPIExtensions;
-/* GoodspeedTweakScale plugin (fundCfg) Copyright 2014 Gaius Goodspeed
-
-This software is made available by the author under the terms of the
-Creative Commons Attribution-NonCommercial-ShareAlike license.  See
-the following web page for details:
-
-http://creativecommons.org/licenses/by-nc-sa/4.0/
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
 using System;
 using System.Collections;
 using System.Collections.Generic;
