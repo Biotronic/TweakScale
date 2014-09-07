@@ -11,6 +11,8 @@
     <AssemblyName>Scale</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <ProductVersion>12.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -31,18 +33,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>E:\KSP_Test\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\KerbalRescalingInstall\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>E:\KSP_Test\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>..\..\mainkerbaldir\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="KSPAPIExtensions">
-      <HintPath>lib\KSPAPIExtensions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Scale_Redist, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>lib\Scale_Redist.dll</HintPath>
+      <HintPath>..\..\KerbalRescalingInstall\GameData\MagicSmokeIndustries\Plugins\KSPAPIExtensions.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -51,7 +48,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
-      <HintPath>E:\KSP_Test\KSP_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>..\..\KerbalRescalingInstall\KSP_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -78,4 +75,10 @@ copy "$(ProjectDir)lib\KSPAPIExtensions.dll" "$(ProjectDir)\Gamedata\TweakScale\
   <Target Name="AfterBuild">
   </Target>
   -->
+  <ItemGroup>
+    <ProjectReference Include="Scale_Redist\Scale_Redist.csproj">
+      <Project>{2BE63D8B-350E-4EDD-959C-4B7397984364}</Project>
+      <Name>Scale_Redist</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>

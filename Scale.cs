@@ -70,6 +70,11 @@ namespace TweakScale
         /// The scale exponentValue array. If isFreeScale is false, the part may only be one of these scales.
         /// </summary>
         protected float[] scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
+        
+        /// <summary>
+        /// The node scale array. If node scales are defined the nodes will be resized to these values.
+        ///</summary>
+        protected int[] scaleNodes = { };
 
         /// <summary>
         /// The unmodified prefab part. From this, default values are found.
@@ -215,6 +220,7 @@ namespace TweakScale
                 if (scaleFactors.Length > 0)
                 {
                     scaleFactors = config.scaleFactors;
+                    scaleNodes = config.scaleNodes;
                     options.options = config.scaleNames;
                 }
             }
@@ -316,8 +322,15 @@ namespace TweakScale
             }
             else
             {
-                var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
-                node.size = (int)(baseNode.size + (tweakName - Tools.ClosestIndex(defaultScale, config.allScaleFactors)) / (float)config.allScaleFactors.Length * 5);
+            	var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
+            	if (scaleNodes.Length > 0)
+            	{
+            		node.size = scaleNodes[tweakName];
+            	}
+            	else
+            	{
+                	node.size = (int)(baseNode.size + (tweakName - Tools.ClosestIndex(defaultScale, config.allScaleFactors)) / (float)config.allScaleFactors.Length * 5);
+                }
             }
             if (node.size < 0)
             {
