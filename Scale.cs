@@ -325,7 +325,7 @@ namespace TweakScale
             	var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
             	if (scaleNodes.Length > 0)
             	{
-            		node.size = scaleNodes[tweakName];
+            		node.size = (int)(baseNode.size + (1 * scaleNodes[tweakName]));
             	}
             	else
             	{
