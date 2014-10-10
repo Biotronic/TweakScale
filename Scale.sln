@@ -1,13 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
-MinimumVisualStudioVersion = 10.0.40219.1
+# Visual Studio Express 2012 for Windows Desktop
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scale", "Scale.csproj", "{70D38878-43DB-4F6E-8002-45ADA5391AF7}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TweakScale_ModularFuelTanks", "TweakScale_ModularFuelTanks\TweakScale_ModularFuelTanks.csproj", "{55A34EE4-430D-4DA8-BCBA-60ECE7AED344}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TweakScale_RealFuels", "TweakScale_RealFuels\TweakScale_RealFuels.csproj", "{2C855B01-7389-4D45-A424-74F3A4CABB8C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scale_Redist", "Scale_Redist\Scale_Redist.csproj", "{2BE63D8B-350E-4EDD-959C-4B7397984364}"
 EndProject
@@ -23,14 +17,6 @@ Global
 		{70D38878-43DB-4F6E-8002-45ADA5391AF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70D38878-43DB-4F6E-8002-45ADA5391AF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{70D38878-43DB-4F6E-8002-45ADA5391AF7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{55A34EE4-430D-4DA8-BCBA-60ECE7AED344}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{55A34EE4-430D-4DA8-BCBA-60ECE7AED344}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{55A34EE4-430D-4DA8-BCBA-60ECE7AED344}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{55A34EE4-430D-4DA8-BCBA-60ECE7AED344}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2C855B01-7389-4D45-A424-74F3A4CABB8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2C855B01-7389-4D45-A424-74F3A4CABB8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2C855B01-7389-4D45-A424-74F3A4CABB8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2C855B01-7389-4D45-A424-74F3A4CABB8C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2BE63D8B-350E-4EDD-959C-4B7397984364}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2BE63D8B-350E-4EDD-959C-4B7397984364}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2BE63D8B-350E-4EDD-959C-4B7397984364}.Release|Any CPU.ActiveCfg = Release|Any CPU

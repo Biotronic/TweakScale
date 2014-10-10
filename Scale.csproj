@@ -30,31 +30,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>E:\KSP_Test\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>E:\KSP_Test\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
-    </Reference>
-    <Reference Include="KSPAPIExtensions">
-      <HintPath>lib\KSPAPIExtensions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Scale_Redist, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>lib\Scale_Redist.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-    <Reference Include="UnityEngine">
-      <HintPath>E:\KSP_Test\KSP_Data\Managed\UnityEngine.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Checker.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="FieldChanger.cs" />
@@ -66,10 +41,31 @@
     <Compile Include="Tuple.cs" />
     <Compile Include="Updater.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Scale_Redist\Scale_Redist.csproj">
+      <Project>{2be63d8b-350e-4edd-959c-4b7397984364}</Project>
+      <Name>Scale_Redist</Name>
+      <Private>False</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\..\..\..\Games\KSP_025clean\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="KSPAPIExtensions">
+      <HintPath>..\KSPAPIExtensions\KSPAPIExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="UnityEngine">
+      <HintPath>..\..\..\..\..\Games\KSP_025clean\KSP_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(TargetPath)" "$(ProjectDir)\Gamedata\TweakScale\plugins"
-copy "$(ProjectDir)lib\KSPAPIExtensions.dll" "$(ProjectDir)\Gamedata\TweakScale\plugins"</PostBuildEvent>
+copy "$(ProjectDir)\..\KSPAPIExtensions\KSPAPIExtensions.dll" "$(ProjectDir)\Gamedata\TweakScale\plugins"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
