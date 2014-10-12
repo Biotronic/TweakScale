@@ -20,6 +20,7 @@ namespace TweakScale
         private string _id;
         private string _name;
         private Dictionary<string, Tuple<string, bool>> _exponents;
+        private List<string> _ignores;
         private Dictionary<string, ScaleExponents> _children;
 
         private static Dictionary<string, ScaleExponents> globalList;
@@ -66,6 +67,7 @@ namespace TweakScale
             {
                 _exponents = new Dictionary<string, Tuple<string, bool>>();
                 _children = new Dictionary<string, ScaleExponents>();
+                _ignores = new List<string>();
             }
             else
             {
@@ -74,6 +76,7 @@ namespace TweakScale
                     ._children
                     .Select(a => new KeyValuePair<string, ScaleExponents>(a.Key, a.Value.Clone()))
                     .ToDictionary(a => a.Key, a => a.Value);
+                _ignores = new List<string>(source._ignores);
             }
         }
 
@@ -97,6 +100,7 @@ namespace TweakScale
 
             _exponents = new Dictionary<string, Tuple<string, bool>>();
             _children = new Dictionary<string, ScaleExponents>();
+            _ignores = new List<string>();
 
             foreach (var value in node.values.OfType<ConfigNode.Value>().Where(a=>a.name != "name"))
             {
@@ -106,7 +110,10 @@ namespace TweakScale
                 }
                 else
                 {
-                    _exponents[value.name] = Tuple.Create(value.value, false);
+                    if(value.name.Equals("-ignore"))
+                        _ignores.Add(value.value);
+                    else
+                        _exponents[value.name] = Tuple.Create(value.value, false);
                 }
             }
 
@@ -138,6 +145,13 @@ namespace TweakScale
                 if (!destination._exponents.ContainsKey(value.Key))
                 {
                     destination._exponents[value.Key] = value.Value;
+                }
+            }
+            foreach (string value in source._ignores)
+            {
+                if (!destination._ignores.Contains(value))
+                {
+                    destination._ignores.Add(value);
                 }
             }
             foreach (var child in source._children)
@@ -222,7 +236,8 @@ namespace TweakScale
         /// <param name="obj">The object to rescale.</param>
         /// <param name="baseObj">The corresponding object in the prefab.</param>
         /// <param name="factor">The new scale.</param>
-        public void UpdateFields(object obj, object baseObj, ScalingFactor factor)
+        /// <param name="part">The part the object is on.</param>
+        public void UpdateFields(object obj, object baseObj, ScalingFactor factor, Part part = null)
         {
             if (obj is PartModule && obj.GetType().Name != _id)
             {
@@ -232,7 +247,7 @@ namespace TweakScale
 
             if (obj is IEnumerable)
             {
-                UpdateEnumerable((IEnumerable)obj, (IEnumerable)baseObj, factor);
+                UpdateEnumerable((IEnumerable)obj, (IEnumerable)baseObj, factor, part);
                 return;
             }
 
@@ -248,15 +263,26 @@ namespace TweakScale
                 {
                     continue;
                 }
-                if (baseObjTmp == null)
+                bool doScale = true;
+                if ((object)part != null)
+                    foreach (string v in _ignores)
+                        if (part.Modules.Contains(v))
+                        {
+                            doScale = false;
+                            break;
+                        }
+                if (doScale)
                 {
-                    // No prefab from which to grab values. Use relative scaling.
-                    value.Value = Rescale(value.Value, value.Value, fieldName, factor, relative: true);
-                }
-                else
-                {
-                    var baseValue = FieldChanger<double>.CreateFromName(baseObj, fieldName);
-                    value.Value = Rescale(value.Value, baseValue.Value, fieldName, factor);
+                    if (baseObjTmp == null)
+                    {
+                        // No prefab from which to grab values. Use relative scaling.
+                        value.Value = Rescale(value.Value, value.Value, fieldName, factor, relative: true);
+                    }
+                    else
+                    {
+                        var baseValue = FieldChanger<double>.CreateFromName(baseObj, fieldName);
+                        value.Value = Rescale(value.Value, baseValue.Value, fieldName, factor);
+                    }
                 }
             }
 
@@ -267,7 +293,7 @@ namespace TweakScale
                 if (childObjField != null)
                 {
                     var baseChildObjField = FieldChanger<object>.CreateFromName(baseObj, childName);
-                    _child.Value.UpdateFields(childObjField.Value, baseChildObjField.Value, factor);
+                    _child.Value.UpdateFields(childObjField.Value, baseChildObjField.Value, factor, part);
                 }
             }
         }
@@ -278,7 +304,8 @@ namespace TweakScale
         /// <param name="obj">The list whose items we want to update.</param>
         /// <param name="baseObj">The corresponding list in the prefab.</param>
         /// <param name="factor">The scaling factor.</param>
-        private void UpdateEnumerable(IEnumerable obj, IEnumerable baseObj, ScalingFactor factor)
+        /// <param name="part">The part the object is on.</param>
+        private void UpdateEnumerable(IEnumerable obj, IEnumerable baseObj, ScalingFactor factor, Part part = null)
         {
             IEnumerable other = baseObj;
             if (baseObj == null || obj.StupidCount() != baseObj.StupidCount())
@@ -299,7 +326,7 @@ namespace TweakScale
                         }
                     }
                 }
-                UpdateFields(item.Item1, item.Item2, factor);
+                UpdateFields(item.Item1, item.Item2, factor, part);
             }
         }
 
@@ -307,14 +334,14 @@ namespace TweakScale
         {
             if (exps.ContainsKey("Part"))
             {
-                exps["Part"].UpdateFields(part, basePart, factor);
+                exps["Part"].UpdateFields(part, basePart, factor, part);
             }
 
             var modulesAndExponents = part.Modules.Cast<PartModule>().Zip(basePart.Modules.Cast<PartModule>()).Join(exps, modules => modules.Item1.moduleName, exponents => exponents.Key, (modules, exponent) => Tuple.Create(modules, exponent.Value)).ToArray();
 
             foreach (var modExp in modulesAndExponents)
             {
-                modExp.Item2.UpdateFields(modExp.Item1.Item1, modExp.Item1.Item2, factor);
+                modExp.Item2.UpdateFields(modExp.Item1.Item1, modExp.Item1.Item2, factor, part);
             }
         }
 
