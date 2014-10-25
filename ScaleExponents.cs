@@ -17,9 +17,22 @@ namespace TweakScale
 
     public class ScaleExponents
     {
+        struct ScalingMode
+        {
+            public string Exponent { get; set; }
+            public bool UseRelativeScaling { get; set; }
+
+            public ScalingMode(string exponent, bool useRelativeScaling)
+                : this()
+            {
+                Exponent = exponent;
+                UseRelativeScaling = useRelativeScaling;
+            }
+        }
+
         private string _id;
         private string _name;
-        private Dictionary<string, Tuple<string, bool>> _exponents;
+        private Dictionary<string, ScalingMode> _exponents;
         private List<string> _ignores;
         private Dictionary<string, ScaleExponents> _children;
 
@@ -65,7 +78,7 @@ namespace TweakScale
             _id = source._id;
             if (source == null)
             {
-                _exponents = new Dictionary<string, Tuple<string, bool>>();
+                _exponents = new Dictionary<string, ScalingMode>();
                 _children = new Dictionary<string, ScaleExponents>();
                 _ignores = new List<string>();
             }
@@ -98,7 +111,7 @@ namespace TweakScale
                 }
             }
 
-            _exponents = new Dictionary<string, Tuple<string, bool>>();
+            _exponents = new Dictionary<string, ScalingMode>();
             _children = new Dictionary<string, ScaleExponents>();
             _ignores = new List<string>();
 
@@ -106,14 +119,15 @@ namespace TweakScale
             {
                 if (value.name.StartsWith("!"))
                 {
-                    _exponents[value.name.Substring(1)] = Tuple.Create(value.value, true);
+                    _exponents[value.name.Substring(1)] = new ScalingMode(value.value, true);
+                }
+                else if (value.name.Equals("-ignore"))
+                {
+                    _ignores.Add(value.value);
                 }
                 else
                 {
-                    if(value.name.Equals("-ignore"))
-                        _ignores.Add(value.value);
-                    else
-                        _exponents[value.name] = Tuple.Create(value.value, false);
+                    _exponents[value.name] = new ScalingMode(value.value, false);
                 }
             }
 
@@ -169,17 +183,6 @@ namespace TweakScale
         }
 
         /// <summary>
-        /// The names of all exponents this ScaleExponents set covers.
-        /// </summary>
-        public IEnumerable<string> Exponents
-        {
-            get
-            {
-                return _exponents.Keys;
-            }
-        }
-
-        /// <summary>
         /// Rescales destination exponentValue according to its associated exponent.
         /// </summary>
         /// <param name="currentValue">The current exponentValue.</param>
@@ -188,45 +191,33 @@ namespace TweakScale
         /// <param name="factor">The rescaling factor.</param>
         /// <param name="relative">Whether to use relative or absolute scaling.</param>
         /// <returns>The rescaled exponentValue.</returns>
-        public double Rescale(double currentValue, double baseValue, string name, ScalingFactor factor, bool relative = false)
+        private void Rescale(MemberUpdater current, MemberUpdater baseValue, KeyValuePair<string, ScalingMode> scalingMode, ScalingFactor factor)
         {
-            if (!_exponents.ContainsKey(name))
-            {
-                Tools.LogWf("No exponent found for {0}.{1}", this._id, name);
-                return currentValue;
-            }
-
-            var exponentValue = _exponents[name].Item1;
+            var exponentValue = scalingMode.Value.Exponent;
             if (exponentValue.Contains(','))
             {
                 if (factor.index == -1)
                 {
-                    Tools.LogWf("Value list used for freescale part exponent field {0}: {1}", name, exponentValue);
-                    return currentValue;
+                    Tools.LogWf("Value list used for freescale part exponent field {0}: {1}", scalingMode.Key, exponentValue);
                 }
                 var values = Tools.ConvertString(exponentValue, new double[] { });
-                if (values.Length == 0)
-                {
-                    Tools.LogWf("No valid values found for {0}: {1}", name, exponentValue);
-                }
                 if (values.Length <= factor.index)
                 {
-                    Tools.LogWf("Too few values given for {0}. Expected at least {1}, got {2}: {3}", name, factor.index + 1, values.Length, exponentValue);
+                    Tools.LogWf("Too few values given for {0}. Expected at least {1}, got {2}: {3}", scalingMode.Key, factor.index + 1, values.Length, exponentValue);
                 }
-                return values[factor.index];
+                current.Set(values[factor.index]);
             }
             else
             {
                 double exponent;
                 if (double.TryParse(exponentValue, out exponent))
                 {
-                    if (relative)
-                    {
-                        return currentValue * Math.Pow(factor.relative.linear, exponent);
-                    }
-                    return baseValue * Math.Pow(factor.absolute.linear, exponent);
+                    current.Scale(Math.Pow(factor.relative.linear, exponent), baseValue);
                 }
-                return currentValue;
+                else
+                {
+                    Tools.LogWf("Invalid exponent {0} for field {1}", exponentValue, scalingMode.Key);
+                }
             }
         }
 
@@ -237,12 +228,24 @@ namespace TweakScale
         /// <param name="baseObj">The corresponding object in the prefab.</param>
         /// <param name="factor">The new scale.</param>
         /// <param name="part">The part the object is on.</param>
-        public void UpdateFields(object obj, object baseObj, ScalingFactor factor, Part part = null)
+        private void UpdateFields(object obj, object baseObj, ScalingFactor factor, Part part)
         {
             if (obj is PartModule && obj.GetType().Name != _id)
             {
                 Tools.LogWf("This ScaleExponent is intended for {0}, not {1}", _id, obj.GetType().Name);
                 return;
+            }
+
+            // Skip update if ignore module exists.
+            if ((object)part != null)
+            {
+                foreach (string v in _ignores)
+                {
+                    if (part.Modules.Contains(v))
+                    {
+                        return;
+                    }
+                }
             }
 
             if (obj is IEnumerable)
@@ -251,48 +254,39 @@ namespace TweakScale
                 return;
             }
 
-            foreach (var fieldName in Exponents)
+            foreach (var exponent in _exponents)
             {
-                var baseObjTmp = baseObj;
-                if (_exponents[fieldName].Item2)
-                {
-                    baseObjTmp = null;
-                }
-                var value = FieldChanger<double>.CreateFromName(obj, fieldName);
+                var value = new MemberUpdater(obj, exponent.Key);
                 if (value == null)
                 {
                     continue;
                 }
-                bool doScale = true;
-                if ((object)part != null)
-                    foreach (string v in _ignores)
-                        if (part.Modules.Contains(v))
-                        {
-                            doScale = false;
-                            break;
-                        }
-                if (doScale)
+                var baseObjTmp = baseObj;
+                if (exponent.Value.UseRelativeScaling)
                 {
-                    if (baseObjTmp == null)
-                    {
-                        // No prefab from which to grab values. Use relative scaling.
-                        value.Value = Rescale(value.Value, value.Value, fieldName, factor, relative: true);
-                    }
-                    else
-                    {
-                        var baseValue = FieldChanger<double>.CreateFromName(baseObj, fieldName);
-                        value.Value = Rescale(value.Value, baseValue.Value, fieldName, factor);
-                    }
+                    // Forced relative scaling. Don't even dare look at the prefab!
+                    baseObjTmp = null;
+                }
+
+                if (baseObjTmp == null)
+                {
+                    // No prefab from which to grab values. Use relative scaling.
+                    Rescale(value, value, exponent, factor);
+                }
+                else
+                {
+                    var baseValue = new MemberUpdater(baseObj, exponent.Key);
+                    Rescale(value, baseValue, exponent, factor);
                 }
             }
 
             foreach (var _child in _children)
             {
                 string childName = _child.Key;
-                var childObjField = FieldChanger<object>.CreateFromName(obj, childName);
+                var childObjField = new MemberUpdater(obj, childName);
                 if (childObjField != null)
                 {
-                    var baseChildObjField = FieldChanger<object>.CreateFromName(baseObj, childName);
+                    var baseChildObjField = new MemberUpdater(baseObj, childName);
                     _child.Value.UpdateFields(childObjField.Value, baseChildObjField.Value, factor, part);
                 }
             }
@@ -302,46 +296,88 @@ namespace TweakScale
         /// For IEnumerables (arrays, lists, etc), we want to update the items, not the list.
         /// </summary>
         /// <param name="obj">The list whose items we want to update.</param>
-        /// <param name="baseObj">The corresponding list in the prefab.</param>
+        /// <param name="prefabObj">The corresponding list in the prefab.</param>
         /// <param name="factor">The scaling factor.</param>
         /// <param name="part">The part the object is on.</param>
-        private void UpdateEnumerable(IEnumerable obj, IEnumerable baseObj, ScalingFactor factor, Part part = null)
+        private void UpdateEnumerable(IEnumerable obj, IEnumerable prefabObj, ScalingFactor factor, Part part = null)
         {
-            IEnumerable other = baseObj;
-            if (baseObj == null || obj.StupidCount() != baseObj.StupidCount())
+            IEnumerable other = prefabObj;
+            if (prefabObj == null || obj.StupidCount() != prefabObj.StupidCount())
             {
                 other = ((object)null).Repeat().Take(obj.StupidCount());
             }
 
-            foreach (var item in obj.Zip(other))
+            foreach (var item in obj.Zip(other, ModuleAndPrefab.Create))
             {
                 if (!string.IsNullOrEmpty(_name) && _name != "*") // Operate on specific elements, not all.
                 {
-                    var childName = item.Item1.GetType().GetField("name");
+                    var childName = item.Current.GetType().GetField("name");
                     if (childName != null)
                     {
-                        if (childName.FieldType != typeof(string) || (string)childName.GetValue(item.Item1) != _name)
+                        if (childName.FieldType != typeof(string) || (string)childName.GetValue(item.Current) != _name)
                         {
                             continue;
                         }
                     }
                 }
-                UpdateFields(item.Item1, item.Item2, factor, part);
+                UpdateFields(item.Current, item.Prefab, factor, part);
             }
         }
 
-        public static void UpdateObject(Part part, Part basePart, Dictionary<string, ScaleExponents> exps, ScalingFactor factor)
+        struct ModuleAndPrefab
         {
-            if (exps.ContainsKey("Part"))
+            public object Current { get; set; }
+            public object Prefab { get; set; }
+
+            private ModuleAndPrefab(object current, object prefab)
+                : this()
             {
-                exps["Part"].UpdateFields(part, basePart, factor, part);
+                Current = current;
+                Prefab = prefab;
             }
 
-            var modulesAndExponents = part.Modules.Cast<PartModule>().Zip(basePart.Modules.Cast<PartModule>()).Join(exps, modules => modules.Item1.moduleName, exponents => exponents.Key, (modules, exponent) => Tuple.Create(modules, exponent.Value)).ToArray();
+            public static ModuleAndPrefab Create(object current, object prefab)
+            {
+                return new ModuleAndPrefab(current, prefab);
+            }
+        }
+
+        struct ModulesAndExponents
+        {
+            public object Current { get; set; }
+            public object Prefab { get; set; }
+            public ScaleExponents Exponents { get; set; }
+
+            private ModulesAndExponents(ModuleAndPrefab modules, ScaleExponents exponents)
+                : this()
+            {
+                Current = modules.Current;
+                Prefab = modules.Prefab;
+                Exponents = exponents;
+            }
+
+            public static ModulesAndExponents Create(ModuleAndPrefab modules, KeyValuePair<string, ScaleExponents> exponents)
+            {
+                return new ModulesAndExponents(modules, exponents.Value);
+            }
+        }
+
+        public static void UpdateObject(Part part, Part prefabObj, Dictionary<string, ScaleExponents> exponents, ScalingFactor factor)
+        {
+            if (exponents.ContainsKey("Part"))
+            {
+                exponents["Part"].UpdateFields(part, prefabObj, factor, part);
+            }
+
+            var modulePairs = part.Modules.Zip(prefabObj.Modules, ModuleAndPrefab.Create);
+            var modulesAndExponents = modulePairs.Join(exponents,
+                                        modules => ((PartModule)modules.Current).moduleName,
+                                        exps => exps.Key,
+                                        ModulesAndExponents.Create).ToArray();
 
             foreach (var modExp in modulesAndExponents)
             {
-                modExp.Item2.UpdateFields(modExp.Item1.Item1, modExp.Item1.Item2, factor, part);
+                modExp.Exponents.UpdateFields(modExp.Current, modExp.Prefab, factor, part);
             }
         }
 

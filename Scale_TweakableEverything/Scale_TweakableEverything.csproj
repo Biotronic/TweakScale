@@ -1,16 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{70D38878-43DB-4F6E-8002-45ADA5391AF7}</ProjectGuid>
+    <ProjectGuid>{5CFCCBB6-528C-4E96-93BB-829AC621DC2A}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TweakScale</RootNamespace>
-    <AssemblyName>Scale</AssemblyName>
+    <AssemblyName>Scale_TweakableEverything</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,37 +31,47 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Checker.cs" />
-    <Compile Include="ExtensionMethods.cs" />
-    <Compile Include="MemberUpdater.cs" />
-    <Compile Include="ScaleExponents.cs" />
-    <Compile Include="Tools.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Scale.cs" />
-    <Compile Include="ScaleConfig.cs" />
-    <Compile Include="Tuple.cs" />
-    <Compile Include="Updater.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\..\..\..\Games\KSP_025clean\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="KSPAPIExtensions">
-      <HintPath>..\KSPAPIExtensions\KSPAPIExtensions.dll</HintPath>
+      <HintPath>E:\Kerbal Space Program\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Scale_Redist">
-      <HintPath>lib\Scale_Redist.dll</HintPath>
+      <HintPath>..\lib\Scale_Redist.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="UnityEngine">
-      <HintPath>..\..\..\..\..\Games\KSP_025clean\KSP_Data\Managed\UnityEngine.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="ToadicusTools">
+      <HintPath>..\lib\ToadicusTools.dll</HintPath>
     </Reference>
+    <Reference Include="TweakableDecouplers">
+      <HintPath>..\lib\TweakableDecouplers.dll</HintPath>
+    </Reference>
+    <Reference Include="TweakableDockingNode">
+      <HintPath>..\lib\TweakableDockingNode.dll</HintPath>
+    </Reference>
+    <Reference Include="TweakableEngineFairings">
+      <HintPath>..\lib\TweakableEngineFairings.dll</HintPath>
+    </Reference>
+    <Reference Include="TweakableEVA">
+      <HintPath>..\lib\TweakableEVA.dll</HintPath>
+    </Reference>
+    <Reference Include="TweakableReactionWheels">
+      <HintPath>..\lib\TweakableReactionWheels.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>E:\Kerbal Space Program\KSP_Data\Managed\UnityEngine.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="TEUpdaters.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetPath)" "$(ProjectDir)\Gamedata\TweakScale\plugins"
+    <PostBuildEvent>copy "$(TargetPath)" "$(ProjectDir)\..\Gamedata\TweakScale\plugins"
 </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
