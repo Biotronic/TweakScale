@@ -329,7 +329,7 @@ namespace TweakScale
             	}
             	else
             	{
-                	node.size = (int)(baseNode.size + (tweakName - Tools.ClosestIndex(defaultScale, config.allScaleFactors)) / (float)config.allScaleFactors.Length * 5);
+                    node.size = (int)(baseNode.size + (Tools.ClosestIndex(tweakScale, config.allScaleFactors) - Tools.ClosestIndex(defaultScale, config.allScaleFactors)) / (float)config.allScaleFactors.Length * 5);
                 }
             }
             if (node.size < 0)
