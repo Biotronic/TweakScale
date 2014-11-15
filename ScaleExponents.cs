@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace TweakScale
 {
@@ -191,33 +192,67 @@ namespace TweakScale
         /// <param name="factor">The rescaling factor.</param>
         /// <param name="relative">Whether to use relative or absolute scaling.</param>
         /// <returns>The rescaled exponentValue.</returns>
-        private void Rescale(MemberUpdater current, MemberUpdater baseValue, KeyValuePair<string, ScalingMode> scalingMode, ScalingFactor factor)
+        private void Rescale(MemberUpdater current, MemberUpdater baseValue, string name, ScalingMode scalingMode, ScalingFactor factor)
         {
-            var exponentValue = scalingMode.Value.Exponent;
+            var exponentValue = scalingMode.Exponent;
+            double exponent = double.NaN;
+            double[] values = null;
             if (exponentValue.Contains(','))
             {
                 if (factor.index == -1)
                 {
-                    Tools.LogWf("Value list used for freescale part exponent field {0}: {1}", scalingMode.Key, exponentValue);
+                    Tools.LogWf("Value list used for freescale part exponent field {0}: {1}", name, exponentValue);
+                    return;
                 }
-                var values = Tools.ConvertString(exponentValue, new double[] { });
+                values = Tools.ConvertString(exponentValue, new double[] { });
                 if (values.Length <= factor.index)
                 {
-                    Tools.LogWf("Too few values given for {0}. Expected at least {1}, got {2}: {3}", scalingMode.Key, factor.index + 1, values.Length, exponentValue);
+                    Tools.LogWf("Too few values given for {0}. Expected at least {1}, got {2}: {3}", name, factor.index + 1, values.Length, exponentValue);
+                    return;
                 }
+            }
+            else if (!double.TryParse(exponentValue, out exponent))
+            {
+                Tools.LogWf("Invalid exponent {0} for field {1}", exponentValue, name);
+            }
+
+
+            if (current.MemberType.GetInterface("IList") != null)
+            {
+                var v = (IList)current.Value;
+                var v2 = (IList)baseValue.Value;
+
+                for (int i = 0; i < v.Count && i < v2.Count; ++i)
+                {
+                    if (values != null)
+                    {
+                        v[i] = values[factor.index];
+                    }
+                    else if (!double.IsNaN(exponent))
+                    {
+                        if (v[i] is float)
+                        {
+                            v[i] = (float)v2[i] * Math.Pow(factor.relative.linear, exponent);
+                        }
+                        else if (v[i] is double)
+                        {
+                            v[i] = (double)v2[i] * Math.Pow(factor.relative.linear, exponent);
+                        }
+                        else if (v[i] is Vector3)
+                        {
+                            v[i] = (Vector3)v2[i] * (float)Math.Pow(factor.relative.linear, exponent);
+                        }
+                    }
+                }
+            }
+
+            if (values != null)
+            {
                 current.Set(values[factor.index]);
             }
-            else
+            else if (!double.IsNaN(exponent))
             {
-                double exponent;
-                if (double.TryParse(exponentValue, out exponent))
-                {
-                    current.Scale(Math.Pow(factor.relative.linear, exponent), baseValue);
-                }
-                else
-                {
-                    Tools.LogWf("Invalid exponent {0} for field {1}", exponentValue, scalingMode.Key);
-                }
+                current.Scale(Math.Pow(factor.relative.linear, exponent), baseValue);
             }
         }
 
@@ -230,6 +265,11 @@ namespace TweakScale
         /// <param name="part">The part the object is on.</param>
         private void UpdateFields(object obj, object baseObj, ScalingFactor factor, Part part)
         {
+            if ((object)obj == null)
+            {
+                return;
+            }
+
             if (obj is PartModule && obj.GetType().Name != _id)
             {
                 Tools.LogWf("This ScaleExponent is intended for {0}, not {1}", _id, obj.GetType().Name);
@@ -254,40 +294,32 @@ namespace TweakScale
                 return;
             }
 
-            foreach (var exponent in _exponents)
+            foreach (var nameExponentKV in _exponents)
             {
-                var value = new MemberUpdater(obj, exponent.Key);
+                var value = MemberUpdater.Create(obj, nameExponentKV.Key);
                 if (value == null)
                 {
                     continue;
                 }
                 var baseObjTmp = baseObj;
-                if (exponent.Value.UseRelativeScaling)
+                if (nameExponentKV.Value.UseRelativeScaling)
                 {
                     // Forced relative scaling. Don't even dare look at the prefab!
                     baseObjTmp = null;
                 }
 
-                if (baseObjTmp == null)
-                {
-                    // No prefab from which to grab values. Use relative scaling.
-                    Rescale(value, value, exponent, factor);
-                }
-                else
-                {
-                    var baseValue = new MemberUpdater(baseObj, exponent.Key);
-                    Rescale(value, baseValue, exponent, factor);
-                }
+                var baseValue = MemberUpdater.Create(baseObj, nameExponentKV.Key);
+                Rescale(value, baseValue ?? value, nameExponentKV.Key, nameExponentKV.Value, factor);
             }
 
             foreach (var _child in _children)
             {
                 string childName = _child.Key;
-                var childObjField = new MemberUpdater(obj, childName);
-                if (childObjField != null)
+                var childObjField = MemberUpdater.Create(obj, childName);
+                if (childObjField != null && _child.Value != null)
                 {
-                    var baseChildObjField = new MemberUpdater(baseObj, childName);
-                    _child.Value.UpdateFields(childObjField.Value, baseChildObjField.Value, factor, part);
+                    var baseChildObjField = MemberUpdater.Create(baseObj, childName);
+                    _child.Value.UpdateFields(childObjField.Value, (baseChildObjField ?? childObjField).Value, factor, part);
                 }
             }
         }

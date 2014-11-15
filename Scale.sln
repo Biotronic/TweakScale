@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scale_Editor", "Scale_Edito
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scale_TweakableEverything", "Scale_TweakableEverything\Scale_TweakableEverything.csproj", "{5CFCCBB6-528C-4E96-93BB-829AC621DC2A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scale_FS", "Scale_FS\Scale_FS.csproj", "{FC9D7E8E-9C06-4F09-8647-967C7355AA9A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scale_FAR", "Scale_FAR\Scale_FAR.csproj", "{AC68606D-F655-4524-8A1B-EFFDFC87F2C6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +37,14 @@ Global
 		{5CFCCBB6-528C-4E96-93BB-829AC621DC2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5CFCCBB6-528C-4E96-93BB-829AC621DC2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5CFCCBB6-528C-4E96-93BB-829AC621DC2A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC9D7E8E-9C06-4F09-8647-967C7355AA9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC9D7E8E-9C06-4F09-8647-967C7355AA9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC9D7E8E-9C06-4F09-8647-967C7355AA9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC9D7E8E-9C06-4F09-8647-967C7355AA9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC68606D-F655-4524-8A1B-EFFDFC87F2C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC68606D-F655-4524-8A1B-EFFDFC87F2C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC68606D-F655-4524-8A1B-EFFDFC87F2C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC68606D-F655-4524-8A1B-EFFDFC87F2C6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

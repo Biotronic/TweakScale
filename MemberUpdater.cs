@@ -12,28 +12,51 @@ namespace TweakScale
         object _object = null;
         FieldInfo _field = null;
         PropertyInfo _property = null;
+        UI_FloatRange _floatRange = null;
 
-        public MemberUpdater(object obj, string name)
+        public static MemberUpdater Create(object obj, string name)
         {
             if (obj == null)
             {
-                return;
+                return null;
+            }
+            var objectType = obj.GetType();
+            var field = objectType.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var property = objectType.GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            UI_FloatRange floatRange = null;
+            if (obj is PartModule)
+            {
+                var fieldData = (obj as PartModule).Fields[name];
+                if ((object)fieldData != null)
+                {
+                    var ctrl = fieldData.uiControlEditor;
+                    if (ctrl is UI_FloatRange)
+                    {
+                        floatRange = ctrl as UI_FloatRange;
+                    }
+                }
             }
 
-            var objectType = obj.GetType();
-            _object = obj;
-            _field = objectType.GetField(name, BindingFlags.Instance | BindingFlags.Public);
-            _property = objectType.GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
-
-            if (_property != null && _property.GetIndexParameters().Length > 0)
+            if (property != null && property.GetIndexParameters().Length > 0)
             {
                 Tools.LogWf("Property {0} on {1} requires indices, which TweakScale currently does not support.", name, objectType.Name);
-                _property = null;
+                return null;
             }
-            if (_field == null && _property == null)
+            if (field == null && property == null)
             {
                 Tools.LogWf("No valid member found for {0} in {1}", name, objectType.Name);
+                return null;
             }
+
+            return new MemberUpdater(obj, field, property, floatRange);
+        }
+
+        private MemberUpdater(object obj, FieldInfo field, PropertyInfo property, UI_FloatRange floatRange)
+        {
+            _object = obj;
+            _field = field;
+            _property = property;
+            _floatRange = floatRange;
         }
 
         public object Value
@@ -55,6 +78,22 @@ namespace TweakScale
             }
         }
 
+        public Type MemberType
+        {
+            get
+            {
+                if (_field != null)
+                {
+                    return _field.FieldType;
+                }
+                else if (_property != null)
+                {
+                    return _property.PropertyType;
+                }
+                return null;
+            }
+        }
+
         public void Set(object value)
         {
             if (_field != null)
@@ -64,14 +103,6 @@ namespace TweakScale
             else if (_property != null)
             {
                 _property.SetValue(_object, value, null);
-            }
-        }
-
-        public Type MemberType
-        {
-            get
-            {
-                return _field == null ? _field.FieldType : _property.PropertyType;
             }
         }
 
@@ -85,17 +116,29 @@ namespace TweakScale
             object newValue = Value;
             if (MemberType == typeof(float))
             {
-                newValue = (float)newValue * (float)scale;
+                Set((float)newValue * (float)scale);
+                RescaleFloatRange((float)scale);
             }
             else if (MemberType == typeof(double))
             {
-                newValue = (double)newValue * scale;
+                Set((double)newValue * scale);
+                RescaleFloatRange((float)scale);
             }
             else if (MemberType == typeof(Vector3))
             {
-                newValue = (Vector3)newValue * (float)scale;
+                Set((Vector3)newValue * (float)scale);
             }
-            Set(newValue);
+        }
+
+        private void RescaleFloatRange(float factor)
+        {
+            if ((object)_floatRange == null)
+            {
+                return;
+            }
+            _floatRange.maxValue *= factor;
+            _floatRange.minValue *= factor;
+            _floatRange.stepIncrement *= factor;
         }
     }
 }
