@@ -192,7 +192,7 @@ namespace TweakScale
         /// <param name="factor">The rescaling factor.</param>
         /// <param name="relative">Whether to use relative or absolute scaling.</param>
         /// <returns>The rescaled exponentValue.</returns>
-        private void Rescale(MemberUpdater current, MemberUpdater baseValue, string name, ScalingMode scalingMode, ScalingFactor factor)
+        static private void Rescale(MemberUpdater current, MemberUpdater baseValue, string name, ScalingMode scalingMode, ScalingFactor factor)
         {
             var exponentValue = scalingMode.Exponent;
             double exponent = double.NaN;
@@ -252,7 +252,8 @@ namespace TweakScale
             }
             else if (!double.IsNaN(exponent))
             {
-                current.Scale(Math.Pow(factor.relative.linear, exponent), baseValue);
+
+                current.Scale(Math.Pow(scalingMode.UseRelativeScaling ? factor.relative.linear : factor.absolute.linear, exponent), baseValue);
             }
         }
 

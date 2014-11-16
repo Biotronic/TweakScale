@@ -92,6 +92,10 @@ namespace TweakScale
         [KSPField(isPersistant = true)]
         public Vector3 defaultTransformScale = new Vector3(0f, 0f, 0f);
 
+
+        //[KSPField(isPersistant = true)]
+        bool firstUpdateWithParent = true;
+
         /// <summary>
         /// Updaters for different PartModules.
         /// </summary>
@@ -226,12 +230,18 @@ namespace TweakScale
             }
         }
 
+        bool setupRun = false;
         /// <summary>
         /// Sets up values from config, creates updaters, and sets up initial values.
         /// </summary>
         protected virtual void Setup()
         {
             if (part.partInfo == null)
+            {
+                return;
+            }
+
+            if (setupRun)
             {
                 return;
             }
@@ -268,12 +278,17 @@ namespace TweakScale
                     updater.OnRescale(scalingFactor);
                 }
             }
+            setupRun = true;
         }
 
 
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
+            if ((object)part.parent != null)
+            {
+                firstUpdateWithParent = false;
+            }
             Setup();
         }
 
@@ -456,21 +471,24 @@ namespace TweakScale
                 tweakScale = scaleFactors[tweakName];
             }
 
-            foreach (var child in part.children)
+            if (!Input.GetKey(KeyCode.LeftShift))
             {
-                var ts = child.Modules.OfType<TweakScale>().FirstOrDefault();
-                if ((object)ts == null)
-                    continue;
-                if (ts.config != config)
-                    continue;
-                if (ts.tweakScale != currentScale)
-                    continue;
-                ts.tweakScale = tweakScale;
-                if (!isFreeScale)
+                foreach (var child in part.children)
                 {
-                    ts.tweakName = tweakName;
+                    var ts = child.Modules.OfType<TweakScale>().FirstOrDefault();
+                    if ((object)ts == null)
+                        continue;
+                    if (ts.config != config)
+                        continue;
+                    if (ts.tweakScale != currentScale)
+                        continue;
+                    ts.tweakScale = tweakScale;
+                    if (!isFreeScale)
+                    {
+                        ts.tweakName = tweakName;
+                    }
+                    ts.OnTweakScaleChanged();
                 }
-                ts.OnTweakScaleChanged();
             }
 
             updateByWidth(true);
@@ -519,8 +537,6 @@ namespace TweakScale
             return false;
         }
 
-        bool firstUpdateWithParent = true;
-
         public void Update()
         {
             if (CheckForDuplicateTweakScale() || CheckForInvalidCfg())
@@ -533,6 +549,7 @@ namespace TweakScale
                 var ts = part.parent.Modules.OfType<TweakScale>().FirstOrDefault();
                 if ((object)ts != null && ts.config == config)
                 {
+                    Tools.Logf("Changing size based on parent! ts: {0} this: {1}", ts.config.name, config.name);
                     tweakName = ts.tweakName;
                     tweakScale = ts.tweakScale;
                 }
@@ -541,7 +558,7 @@ namespace TweakScale
 
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
             {
-                bool changed = isFreeScale ? tweakScale != currentScale : currentScale != scaleFactors[tweakName];
+                bool changed = currentScale != (isFreeScale ? tweakScale : scaleFactors[tweakName]);
 
                 if (changed) // user has changed the scale tweakable
                 {
@@ -561,7 +578,7 @@ namespace TweakScale
 
         public float GetModuleCost()
         {
-            if (currentScale == -1)
+            if (!setupRun)
             {
                 Setup();
             }

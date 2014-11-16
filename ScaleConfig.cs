@@ -152,10 +152,14 @@ namespace TweakScale
             _scaleNames   = Tools.ConfigValue(config, "scaleNames",   defaultValue: source._scaleNames).Select(a => a.Trim()).ToArray();
             techRequired  = Tools.ConfigValue(config, "techRequired", defaultValue: source.techRequired).Select(a=>a.Trim()).ToArray();
             name          = Tools.ConfigValue(config, "name",         defaultValue: "unnamed scaletype");
+            if (name == "TweakScale")
+            {
+                name = source.name;
+            }
 
             if (_scaleFactors.Length != _scaleNames.Length)
             {
-                Tools.LogWf("Wrong number of scaleFactors compared to scaleNames: {0} vs {1}", _scaleFactors.Length, _scaleNames.Length);
+                Tools.LogWf("Wrong number of scaleFactors compared to scaleNames: {0} scaleFactors vs {1} scaleNames", _scaleFactors.Length, _scaleNames.Length);
             }
 
             if (techRequired.Length < _scaleFactors.Length)
