@@ -183,5 +183,28 @@ namespace TweakScale
             result += "	maxValue = " + maxValue.ToString() + "\n";
             return result + "}";
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is ScaleConfig)
+            {
+                return this == (obj as ScaleConfig);
+            }
+            return false;
+        }
+
+        public static bool operator ==(ScaleConfig a, ScaleConfig b)
+        {
+            if ((object)a == null)
+                return (object)b == null;
+            if ((object)b == null)
+                return false;
+            return a.name == b.name;
+        }
+
+        public static bool operator !=(ScaleConfig a, ScaleConfig b)
+        {
+            return !(a == b);
+        }
     }
 }

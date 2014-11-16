@@ -1,19 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scale", "Scale.csproj", "{70D38878-43DB-4F6E-8002-45ADA5391AF7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scale_Redist", "Scale_Redist\Scale_Redist.csproj", "{2BE63D8B-350E-4EDD-959C-4B7397984364}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scale_Editor", "Scale_Editor\Scale_Editor.csproj", "{609C9905-6B3A-44AF-9E10-2B1A594CDEE4}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scale_TweakableEverything", "Scale_TweakableEverything\Scale_TweakableEverything.csproj", "{5CFCCBB6-528C-4E96-93BB-829AC621DC2A}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scale_FS", "Scale_FS\Scale_FS.csproj", "{FC9D7E8E-9C06-4F09-8647-967C7355AA9A}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scale_FAR", "Scale_FAR\Scale_FAR.csproj", "{AC68606D-F655-4524-8A1B-EFFDFC87F2C6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,18 +27,6 @@ Global
 		{609C9905-6B3A-44AF-9E10-2B1A594CDEE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{609C9905-6B3A-44AF-9E10-2B1A594CDEE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{609C9905-6B3A-44AF-9E10-2B1A594CDEE4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5CFCCBB6-528C-4E96-93BB-829AC621DC2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5CFCCBB6-528C-4E96-93BB-829AC621DC2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5CFCCBB6-528C-4E96-93BB-829AC621DC2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5CFCCBB6-528C-4E96-93BB-829AC621DC2A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FC9D7E8E-9C06-4F09-8647-967C7355AA9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FC9D7E8E-9C06-4F09-8647-967C7355AA9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FC9D7E8E-9C06-4F09-8647-967C7355AA9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FC9D7E8E-9C06-4F09-8647-967C7355AA9A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AC68606D-F655-4524-8A1B-EFFDFC87F2C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AC68606D-F655-4524-8A1B-EFFDFC87F2C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AC68606D-F655-4524-8A1B-EFFDFC87F2C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AC68606D-F655-4524-8A1B-EFFDFC87F2C6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

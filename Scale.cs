@@ -449,14 +449,47 @@ namespace TweakScale
             }
         }
 
-        private bool invalidCfg = false;
-        public void Update()
+        void OnTweakScaleChanged()
+        {
+            if (!isFreeScale)
+            {
+                tweakScale = scaleFactors[tweakName];
+            }
+
+            foreach (var child in part.children)
+            {
+                var ts = child.Modules.OfType<TweakScale>().FirstOrDefault();
+                if ((object)ts == null)
+                    continue;
+                if (ts.config != config)
+                    continue;
+                if (ts.tweakScale != currentScale)
+                    continue;
+                ts.tweakScale = tweakScale;
+                if (!isFreeScale)
+                {
+                    ts.tweakName = tweakName;
+                }
+                ts.OnTweakScaleChanged();
+            }
+
+            updateByWidth(true);
+            updateWindow();
+
+            foreach (var updater in updaters)
+            {
+                updater.OnRescale(scalingFactor);
+            }
+            currentScale = tweakScale;
+        }
+
+        private bool CheckForDuplicateTweakScale()
         {
             if (duplicate != Tristate.False)
             {
                 if (duplicate == Tristate.True)
                 {
-                    return;
+                    return true;
                 }
                 if (this != part.Modules.OfType<TweakScale>().First())
                 {
@@ -464,11 +497,16 @@ namespace TweakScale
                     Fields["tweakScale"].guiActiveEditor = false;
                     Fields["tweakName"].guiActiveEditor = false;
                     duplicate = Tristate.True;
-                    return;
+                    return true;
                 }
                 duplicate = Tristate.False;
             }
+            return false;
+        }
 
+        private bool invalidCfg = false;
+        bool CheckForInvalidCfg()
+        {
             if (scaleFactors.Length == 0)
             {
                 if (!invalidCfg)
@@ -476,7 +514,29 @@ namespace TweakScale
                     invalidCfg = true;
                     Tools.LogWf("{0}({1}) has no valid scale factors. This is probably caused by an invalid TweakScale configuration for the part.", part.name, part.partInfo.title);
                 }
+                return true;
+            }
+            return false;
+        }
+
+        bool firstUpdateWithParent = true;
+
+        public void Update()
+        {
+            if (CheckForDuplicateTweakScale() || CheckForInvalidCfg())
+            {
                 return;
+            }
+
+            if (firstUpdateWithParent && (object)part.parent != null)
+            {
+                var ts = part.parent.Modules.OfType<TweakScale>().FirstOrDefault();
+                if ((object)ts != null && ts.config == config)
+                {
+                    tweakName = ts.tweakName;
+                    tweakScale = ts.tweakScale;
+                }
+                firstUpdateWithParent = false;
             }
 
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
@@ -485,19 +545,7 @@ namespace TweakScale
 
                 if (changed) // user has changed the scale tweakable
                 {
-                    if (!isFreeScale)
-                    {
-                        tweakScale = scaleFactors[tweakName];
-                    }
-
-                    updateByWidth(true);
-                    updateWindow();
-
-                    foreach (var updater in updaters)
-                    {
-                        updater.OnRescale(scalingFactor);
-                    }
-                    currentScale = tweakScale;
+                    OnTweakScaleChanged();
                 }
                 else if (part.transform.GetChild(0).localScale != savedScale) // editor frequently nukes our OnStart resize some time later
                 {
