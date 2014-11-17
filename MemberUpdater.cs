@@ -6,10 +6,11 @@ namespace TweakScale
 {
     public class MemberUpdater
     {
-        readonly object _object;
-        readonly FieldInfo _field;
-        readonly PropertyInfo _property;
-        readonly UI_FloatRange _floatRange;
+        private readonly object _object;
+        private readonly FieldInfo _field;
+        private readonly PropertyInfo _property;
+        private readonly UI_FloatRange _floatRange;
+        private const BindingFlags LookupFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
         public static MemberUpdater Create(object obj, string name)
         {
@@ -18,8 +19,8 @@ namespace TweakScale
                 return null;
             }
             var objectType = obj.GetType();
-            var field = objectType.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            var property = objectType.GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var field = objectType.GetField(name, LookupFlags);
+            var property = objectType.GetProperty(name, LookupFlags);
             UI_FloatRange floatRange = null;
             if (obj is PartModule)
             {
@@ -90,6 +91,12 @@ namespace TweakScale
 
         public void Set(object value)
         {
+            if (value.GetType() != MemberType && MemberType.GetInterface("IConvertible") != null &&
+                value.GetType().GetInterface("IConvertible") != null)
+            {
+                value = Convert.ChangeType(value, MemberType);
+            }
+
             if (_field != null)
             {
                 _field.SetValue(_object, value);
@@ -110,13 +117,13 @@ namespace TweakScale
             var newValue = Value;
             if (MemberType == typeof(float))
             {
-                Set((float)newValue * (float)scale);
                 RescaleFloatRange((float)scale);
+                Set((float)newValue * (float)scale);
             }
             else if (MemberType == typeof(double))
             {
-                Set((double)newValue * scale);
                 RescaleFloatRange((float)scale);
+                Set((double)newValue * scale);
             }
             else if (MemberType == typeof(Vector3))
             {
@@ -133,6 +140,21 @@ namespace TweakScale
             _floatRange.maxValue *= factor;
             _floatRange.minValue *= factor;
             _floatRange.stepIncrement *= factor;
+        }
+
+        public string Name {
+            get
+            {
+                if (_field != null)
+                {
+                    return _field.Name;
+                }
+                if (_property != null)
+                {
+                    return _property.Name;
+                }
+                return null;
+            }
         }
     }
 }

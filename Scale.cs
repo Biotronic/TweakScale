@@ -501,7 +501,6 @@ namespace TweakScale
                 var ts = part.parent.Modules.OfType<TweakScale>().FirstOrDefault();
                 if ((object)ts != null && ts.Config == Config)
                 {
-                    Tools.Logf("Changing size based on parent! ts: {0} this: {1}", ts.Config.Name, Config.Name);
                     tweakName = ts.tweakName;
                     tweakScale = ts.tweakScale;
                 }

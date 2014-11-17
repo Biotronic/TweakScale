@@ -231,7 +231,15 @@ namespace TweakScale
 
             if (values != null)
             {
-                current.Set(values[factor.index]);
+                if (current.MemberType == typeof (float))
+                {
+                    current.Set((float)values[factor.index]);
+                }
+                else if (current.MemberType == typeof(float))
+                {
+                    current.Set(values[factor.index]);
+                }
+                
             }
             else if (!double.IsNaN(exponent))
             {
