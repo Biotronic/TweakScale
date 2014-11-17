@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -14,12 +13,12 @@ namespace TweakScale
         /// </summary>
         /// <typeparam name="T1">The type of the elements in the first IEnumerable.</typeparam>
         /// <typeparam name="T2">The type of the elements in the second IEnumerable.</typeparam>
-        /// <param name="destination">The first IEnumerable.</param>
-        /// <param name="source">The second IEnumerable.</param>
+        /// <param name="a">The first IEnumerable.</param>
+        /// <param name="b">The second IEnumerable.</param>
         /// <returns>An IEnumerable containing Tuples of the elements in the two IEnumerables.</returns>
         public static IEnumerable<Tuple<T1, T2>> Zip<T1, T2>(this IEnumerable<T1> a, IEnumerable<T2> b)
         {
-            return a.Zip(b, (x, y) => Tuple.Create(x, y));
+            return a.Zip(b, Tuple.Create);
         }
 
         /// <summary>
@@ -91,15 +90,8 @@ namespace TweakScale
         /// <returns>The first field of the given type, or null.</returns>
         public static FieldInfo GetNonPublicFieldByType<T>(this Type t)
         {
-            FieldInfo[] f = t.GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
-            foreach (var e in f)
-            {
-                if (e.FieldType == typeof(T))
-                {
-                    return e;
-                }
-            }
-            return null;
+            var f = t.GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
+            return f.FirstOrDefault(e => e.FieldType == typeof (T));
         }
         
         /// <summary>
@@ -117,10 +109,10 @@ namespace TweakScale
         /// </summary>
         /// <typeparam name="T1">The type of the elements in the first IEnumerable.</typeparam>
         /// <typeparam name="T2">The type of the elements in the second IEnumerable.</typeparam>
-        /// <param name="destination">The IEnumerable to be filtered</param>
-        /// <param name="source">The IEnumerable acting as destination selector.</param>
-        /// <param name="filterFunc">The function to determine if an element in <paramref name="source"/> means the corresponing element in <paramref name="destination"/> should be kept.</param>
-        /// <returns>An IEnumerable the elements of which are chosen from <paramref name="destination"/> where <paramref name="filterFunc"/> returns true for the corresponding element in <paramref name="source"/>.</returns>
+        /// <param name="a">The IEnumerable to be filtered</param>
+        /// <param name="b">The IEnumerable acting as destination selector.</param>
+        /// <param name="filterFunc">The function to determine if an element in <paramref name="b"/> means the corresponing element in <paramref name="a"/> should be kept.</param>
+        /// <returns>An IEnumerable the elements of which are chosen from <paramref name="a"/> where <paramref name="filterFunc"/> returns true for the corresponding element in <paramref name="b"/>.</returns>
         public static IEnumerable<T1> ZipFilter<T1, T2>(this IEnumerable<T1> a, IEnumerable<T2> b, Func<T2, bool> filterFunc)
         {
             return a.Zip(b).Where(e => filterFunc(e.Item2)).Select(e => e.Item1);
@@ -130,8 +122,8 @@ namespace TweakScale
         /// Repeats destination exponentValue forever.
         /// </summary>
         /// <typeparam name="T">The type of the exponentValue to be repeated.</typeparam>
-        /// <param name="destination">The exponentValue to be repeated.</param>
-        /// <returns>An IEnumerable&lt;T&gt; containing an infite number of the exponentValue <paramref name="destination"/>"/></returns>
+        /// <param name="a">The exponentValue to be repeated.</param>
+        /// <returns>An IEnumerable&lt;T&gt; containing an infite number of the exponentValue <paramref name="a"/>"/></returns>
         public static IEnumerable<T> Repeat<T>(this T a)
         {
             while (true)
@@ -147,7 +139,7 @@ namespace TweakScale
         /// <typeparam name="V">The exponentValue type.</typeparam>
         /// <param name="source">The dictionary to copy.</param>
         /// <returns>A copy of <paramref name="source"/>.</returns>
-        public static Dictionary<K, V> Clone<K, V>(this Dictionary<K, V> source)
+        public static Dictionary<TK, TV> Clone<TK, TV>(this Dictionary<TK, TV> source)
         {
             return source.AsEnumerable().ToDictionary(a => a.Key, a => a.Value);
         }
@@ -161,14 +153,7 @@ namespace TweakScale
         public static bool ContainsDuplicates<T>(this IEnumerable<T> source)
         {
             var tmp = new HashSet<T>();
-            foreach (var item in source)
-            {
-                if (!tmp.Add(item))
-                {
-                    return true;
-                }
-            }
-            return false;
+            return source.Any(item => !tmp.Add(item));
         }
 
         /// <summary>
@@ -194,7 +179,7 @@ namespace TweakScale
         public static HashSet<T> ToHashSet<T>(this IEnumerable<T> source)
         {
             var result = new HashSet<T>();
-            foreach (T item in source)
+            foreach (var item in source)
             {
                 result.Add(item);
             }
@@ -205,29 +190,29 @@ namespace TweakScale
     public static class ConvertEx
     {
         /// <summary>
-        /// Returns an object of tyep <typeparamref name="T"/> and whose exponentValue is equivalent to <paramref name="exponentValue"/>.
+        /// Returns an object of tyep <typeparamref name="T"/> and whose exponentValue is equivalent to <paramref name="value"/>.
         /// </summary>
         /// <typeparam name="T">The type of object to return.</typeparam>
-        /// <typeparam name="U">The type of the object to convert.</typeparam>
-        /// <param name="exponentValue">The object to convert.</param>
-        /// <returns>An object whose type is <typeparamref name="T"/> and whose exponentValue is equivalent to <paramref name="exponentValue"/>. -or- A null reference (Nothing in Visual Basic), if <paramref name="exponentValue"/> is null and <typeparamref name="T"/> is not destination exponentValue type.</returns>
-        /// <exception cref="System.InvalidCastException">This conversion is not supported. -or-<paramref name="exponentValue"/> is null and <typeparamref name="T"/> is destination exponentValue type.</exception>
-        /// <exception cref="System.FormatException"><paramref name="exponentValue"/> is not in destination format recognized by <typeparamref name="T"/>.</exception>
-        /// <exception cref="System.OverflowException"><paramref name="exponentValue"/> represents destination number that is out of the range of <typeparamref name="T"/>.</exception>
-        public static T ChangeType<T, U>(U value) where U : System.IConvertible
+        /// <typeparam name="TU">The type of the object to convert.</typeparam>
+        /// <param name="value">The object to convert.</param>
+        /// <returns>An object whose type is <typeparamref name="T"/> and whose exponentValue is equivalent to <paramref name="value"/>. -or- A null reference (Nothing in Visual Basic), if <paramref name="value"/> is null and <typeparamref name="T"/> is not destination exponentValue type.</returns>
+        /// <exception cref="System.InvalidCastException">This conversion is not supported. -or-<paramref name="value"/> is null and <typeparamref name="T"/> is destination exponentValue type.</exception>
+        /// <exception cref="System.FormatException"><paramref name="value"/> is not in destination format recognized by <typeparamref name="T"/>.</exception>
+        /// <exception cref="System.OverflowException"><paramref name="value"/> represents destination number that is out of the range of <typeparamref name="T"/>.</exception>
+        public static T ChangeType<T, TU>(TU value) where TU : IConvertible
         {
             return (T)Convert.ChangeType(value, typeof(T));
         }
 
         /// <summary>
-        /// Returns an object of tyep <typeparamref name="T"/> and whose exponentValue is equivalent to <paramref name="exponentValue"/>.
+        /// Returns an object of tyep <typeparamref name="T"/> and whose exponentValue is equivalent to <paramref name="value"/>.
         /// </summary>
         /// <typeparam name="T">The type of object to return.</typeparam>
-        /// <param name="exponentValue">The object to convert.</param>
-        /// <returns>An object whose type is <typeparamref name="T"/> and whose exponentValue is equivalent to <paramref name="exponentValue"/>. -or- A null reference (Nothing in Visual Basic), if <paramref name="exponentValue"/> is null and <typeparamref name="T"/> is not destination exponentValue type.</returns>
-        /// <exception cref="System.InvalidCastException">This conversion is not supported. -or-<paramref name="exponentValue"/> is null and <typeparamref name="T"/> is destination exponentValue type.-or-<paramref name="exponentValue"/> does not implement the System.IConvertible interface.</exception>
-        /// <exception cref="System.FormatException"><paramref name="exponentValue"/> is not in destination format recognized by <typeparamref name="T"/>.</exception>
-        /// <exception cref="System.OverflowException"><paramref name="exponentValue"/> represents destination number that is out of the range of <typeparamref name="T"/>.</exception>
+        /// <param name="value">The object to convert.</param>
+        /// <returns>An object whose type is <typeparamref name="T"/> and whose exponentValue is equivalent to <paramref name="value"/>. -or- A null reference (Nothing in Visual Basic), if <paramref name="value"/> is null and <typeparamref name="T"/> is not destination exponentValue type.</returns>
+        /// <exception cref="System.InvalidCastException">This conversion is not supported. -or-<paramref name="value"/> is null and <typeparamref name="T"/> is destination exponentValue type.-or-<paramref name="value"/> does not implement the System.IConvertible interface.</exception>
+        /// <exception cref="System.FormatException"><paramref name="value"/> is not in destination format recognized by <typeparamref name="T"/>.</exception>
+        /// <exception cref="System.OverflowException"><paramref name="value"/> represents destination number that is out of the range of <typeparamref name="T"/>.</exception>
         public static T ChangeType<T>(object value)
         {
             return (T)Convert.ChangeType(value, typeof(T));

@@ -1,9 +1,6 @@
 using KSPAPIExtensions;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 
 namespace TweakScale
@@ -13,16 +10,16 @@ namespace TweakScale
     /// </summary>
     public class GoodspeedTweakScale : TweakScale
     {
-        private bool updated = false;
+        private bool _updated;
 
         protected override void Setup()
         {
             base.Setup();
-            if (!updated)
-            {
-                tweakName = (int)tweakScale;
-                tweakScale = scaleFactors[tweakName];
-            }
+            if (_updated)
+                return;
+            tweakName = (int)tweakScale;
+            tweakScale = ScaleFactors[tweakName];
+            _updated = true;
         }
     }
 
@@ -69,22 +66,22 @@ namespace TweakScale
         /// <summary>
         /// The scale exponentValue array. If isFreeScale is false, the part may only be one of these scales.
         /// </summary>
-        protected float[] scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
+        protected float[] ScaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
         
         /// <summary>
         /// The node scale array. If node scales are defined the nodes will be resized to these values.
         ///</summary>
-        protected int[] scaleNodes = { };
+        protected int[] ScaleNodes = { };
 
         /// <summary>
         /// The unmodified prefab part. From this, default values are found.
         /// </summary>
-        private Part prefabPart;
+        private Part _prefabPart;
 
         /// <summary>
         /// Like currentScale above, this is the current scale vector. If TweakScale supports non-uniform scaling in the future (e.g. changing only the length of destination booster), savedScale may represent such destination scaling, while currentScale won't.
         /// </summary>
-        private Vector3 savedScale;
+        private Vector3 _savedScale;
 
         /// <summary>
         /// The exponentValue by which the part is scaled by default. When destination part uses MODEL { scale = ... }, this will be different from (1,1,1).
@@ -94,12 +91,14 @@ namespace TweakScale
 
 
         //[KSPField(isPersistant = true)]
-        bool firstUpdateWithParent = true;
+        private bool _firstUpdateWithParent = true;
+        private bool _setupRun;
+        private bool _invalidCfg;
 
         /// <summary>
         /// Updaters for different PartModules.
         /// </summary>
-        private IRescalable[] updaters;
+        private IRescalable[] _updaters;
 
         private enum Tristate
         {
@@ -111,18 +110,18 @@ namespace TweakScale
         /// <summary>
         /// Whether this instance of TweakScale is the first. If not, log an error and make sure the TweakScale modules don't harmfully interact.
         /// </summary>
-        private Tristate duplicate = Tristate.Unset;
+        private Tristate _duplicate = Tristate.Unset;
 
         /// <summary>
         /// The Config for this part.
         /// </summary>
-        public ScaleConfig config;
+        public ScaleConfig Config { get; private set; }
 
         /// <summary>
         /// Cost of unscaled, empty part.
         /// </summary>
         [KSPField(isPersistant = true)]
-        public float dryCost;
+        public float DryCost;
 
         /// <summary>
         /// The ConfigNode that belongs to the part this modules affects.
@@ -139,7 +138,7 @@ namespace TweakScale
         /// <summary>
         /// The ConfigNode that belongs to this modules.
         /// </summary>
-        public ConfigNode moduleNode
+        public ConfigNode ModuleNode
         {
             get
             {
@@ -150,7 +149,7 @@ namespace TweakScale
         /// <summary>
         /// The current scaling factor.
         /// </summary>
-        public ScalingFactor scalingFactor
+        public ScalingFactor ScalingFactor
         {
             get
             {
@@ -161,38 +160,28 @@ namespace TweakScale
         /// <summary>
         /// The smallest scale the part can be.
         /// </summary>
-        private float minSize
+        private float MinSize
         {
             get
             {
-                if (isFreeScale)
-                {
-                    var range = (UI_FloatEdit)this.Fields["tweakScale"].uiControlEditor;
-                    return range.minValue;
-                }
-                else
-                {
-                    return scaleFactors.Min();
-                }
+                if (!isFreeScale)
+                    return ScaleFactors.Min();
+                var range = (UI_FloatEdit)Fields["tweakScale"].uiControlEditor;
+                return range.minValue;
             }
         }
 
         /// <summary>
         /// The largest scale the part can be.
         /// </summary>
-        internal float maxSize
+        internal float MaxSize
         {
             get
             {
-                if (isFreeScale)
-                {
-                    var range = (UI_FloatEdit)this.Fields["tweakScale"].uiControlEditor;
-                    return range.maxValue;
-                }
-                else
-                {
-                    return scaleFactors.Max();
-                }
+                if (!isFreeScale)
+                    return ScaleFactors.Max();
+                var range = (UI_FloatEdit)Fields["tweakScale"].uiControlEditor;
+                return range.maxValue;
             }
         }
 
@@ -202,35 +191,33 @@ namespace TweakScale
         /// <param name="config">The settings to use.</param>
         private void SetupFromConfig(ScaleConfig config)
         {
-            isFreeScale = config.isFreeScale;
-            defaultScale = config.defaultScale;
-            this.Fields["tweakScale"].guiActiveEditor = false;
-            this.Fields["tweakName"].guiActiveEditor = false;
+            isFreeScale = config.IsFreeScale;
+            defaultScale = config.DefaultScale;
+            Fields["tweakScale"].guiActiveEditor = false;
+            Fields["tweakName"].guiActiveEditor = false;
             if (isFreeScale)
             {
-                this.Fields["tweakScale"].guiActiveEditor = true;
-                var range = (UI_FloatEdit)this.Fields["tweakScale"].uiControlEditor;
-                range.minValue = config.minValue;
-                range.maxValue = config.maxValue;
+                Fields["tweakScale"].guiActiveEditor = true;
+                var range = (UI_FloatEdit)Fields["tweakScale"].uiControlEditor;
+                range.minValue = config.MinValue;
+                range.maxValue = config.MaxValue;
                 range.incrementLarge = (float)Math.Round((range.maxValue - range.minValue) / 10, 2);
                 range.incrementSmall = (float)Math.Round(range.incrementLarge / 10, 2);
-                this.Fields["tweakScale"].guiUnits = config.suffix;
+                Fields["tweakScale"].guiUnits = config.Suffix;
             }
             else
             {
-                this.Fields["tweakName"].guiActiveEditor = config.scaleFactors.Length > 1;
-                var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
+                Fields["tweakName"].guiActiveEditor = config.ScaleFactors.Length > 1;
+                var options = (UI_ChooseOption)Fields["tweakName"].uiControlEditor;
 
-                if (scaleFactors.Length > 0)
-                {
-                    scaleFactors = config.scaleFactors;
-                    scaleNodes = config.scaleNodes;
-                    options.options = config.scaleNames;
-                }
+                if (ScaleFactors.Length <= 0)
+                    return;
+                ScaleFactors = config.ScaleFactors;
+                ScaleNodes = config.ScaleNodes;
+                options.options = config.ScaleNames;
             }
         }
 
-        bool setupRun = false;
         /// <summary>
         /// Sets up values from config, creates updaters, and sets up initial values.
         /// </summary>
@@ -241,44 +228,44 @@ namespace TweakScale
                 return;
             }
 
-            if (setupRun)
+            if (_setupRun)
             {
                 return;
             }
 
-            prefabPart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
+            _prefabPart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
 
-            updaters = TweakScaleUpdater.createUpdaters(part).ToArray();
+            _updaters = TweakScaleUpdater.CreateUpdaters(part).ToArray();
 
-            SetupFromConfig(config = new ScaleConfig(moduleNode));
+            SetupFromConfig(Config = new ScaleConfig(ModuleNode));
 
 
             var doUpdate = currentScale < 0f;
             if (doUpdate)
             {
                 tweakScale = currentScale = defaultScale;
-                dryCost = (float)(part.partInfo.cost - prefabPart.Resources.Cast<PartResource>().Aggregate(0.0, (a, b) => a + b.maxAmount * b.info.unitCost));
-                if (dryCost < 0)
+                DryCost = (float)(part.partInfo.cost - _prefabPart.Resources.Cast<PartResource>().Aggregate(0.0, (a, b) => a + b.maxAmount * b.info.unitCost));
+                if (DryCost < 0)
                 {
-                    dryCost = 0;
+                    DryCost = 0;
                 }
             }
 
-            if (!isFreeScale && scaleFactors.Length != 0)
+            if (!isFreeScale && ScaleFactors.Length != 0)
             {
-                tweakName = Tools.ClosestIndex(tweakScale, scaleFactors);
-                tweakScale = scaleFactors[tweakName];
+                tweakName = Tools.ClosestIndex(tweakScale, ScaleFactors);
+                tweakScale = ScaleFactors[tweakName];
             }
 
             if (!doUpdate)
             {
-                updateByWidth(false);
-                foreach (var updater in updaters)
+                UpdateByWidth(false);
+                foreach (var updater in _updaters)
                 {
-                    updater.OnRescale(scalingFactor);
+                    updater.OnRescale(ScalingFactor);
                 }
             }
-            setupRun = true;
+            _setupRun = true;
         }
 
 
@@ -287,7 +274,7 @@ namespace TweakScale
             base.OnStart(state);
             if ((object)part.parent != null)
             {
-                firstUpdateWithParent = false;
+                _firstUpdateWithParent = false;
             }
             Setup();
         }
@@ -300,7 +287,7 @@ namespace TweakScale
 
         public override void OnSave(ConfigNode node)
         {
-            version = this.GetType().Assembly.GetName().Version.ToString();
+            version = GetType().Assembly.GetName().Version.ToString();
             base.OnSave(node);
         }
 
@@ -310,10 +297,10 @@ namespace TweakScale
         /// <param name="node">The node to move.</param>
         /// <param name="baseNode">The same node, as found on the prefab part.</param>
         /// <param name="movePart">Whether or not to move attached parts.</param>
-        private void moveNode(AttachNode node, AttachNode baseNode, bool movePart)
+        private void MoveNode(AttachNode node, AttachNode baseNode, bool movePart)
         {
-            Vector3 oldPosition = node.position;
-            node.position = baseNode.position * scalingFactor.absolute.linear;
+            var oldPosition = node.position;
+            node.position = baseNode.position * ScalingFactor.absolute.linear;
             if (movePart && node.attachedPart != null)
             {
                 if (node.attachedPart == part.parent)
@@ -321,7 +308,7 @@ namespace TweakScale
                 else
                     node.attachedPart.transform.Translate(node.position - oldPosition, part.transform);
             }
-            rescaleNode(node, baseNode);
+            RescaleNode(node, baseNode);
         }
 
         /// <summary>
@@ -329,22 +316,21 @@ namespace TweakScale
         /// </summary>
         /// <param name="node">The node to resize.</param>
         /// <param name="baseNode">The same node, as found on the prefab part.</param>
-        private void rescaleNode(AttachNode node, AttachNode baseNode)
+        private void RescaleNode(AttachNode node, AttachNode baseNode)
         {
             if (isFreeScale)
             {
-                node.size = (int)(baseNode.size + (tweakScale - defaultScale) / (maxSize - minSize) * 5);
+                node.size = (int)(baseNode.size + (tweakScale - defaultScale) / (MaxSize - MinSize) * 5);
             }
             else
             {
-            	var options = (UI_ChooseOption)this.Fields["tweakName"].uiControlEditor;
-            	if (scaleNodes.Length > 0)
+            	if (ScaleNodes.Length > 0)
             	{
-            		node.size = (int)(baseNode.size + (1 * scaleNodes[tweakName]));
+            		node.size = baseNode.size + (1 * ScaleNodes[tweakName]);
             	}
             	else
             	{
-                    node.size = (int)(baseNode.size + (Tools.ClosestIndex(tweakScale, config.allScaleFactors) - Tools.ClosestIndex(defaultScale, config.allScaleFactors)) / (float)config.allScaleFactors.Length * 5);
+                    node.size = (int)(baseNode.size + (Tools.ClosestIndex(tweakScale, Config.AllScaleFactors) - Tools.ClosestIndex(defaultScale, Config.AllScaleFactors)) / (float)Config.AllScaleFactors.Length * 5);
                 }
             }
             if (node.size < 0)
@@ -354,62 +340,34 @@ namespace TweakScale
         }
 
         /// <summary>
-        /// Change the size of all attachment nodes to reflect the new size of the part they're attached to.
-        /// </summary>
-        private void rescaleAllNodes()
-        {
-            foreach (AttachNode node in part.attachNodes)
-            {
-                var nodesWithSameId = part.attachNodes
-                    .Where(a => a.id == node.id)
-                    .ToArray();
-                var idIdx = Array.FindIndex(nodesWithSameId, a => a == node);
-                var baseNodesWithSameId = prefabPart.attachNodes
-                    .Where(a => a.id == node.id)
-                    .ToArray();
-                if (idIdx < baseNodesWithSameId.Length)
-                {
-                    var baseNode = baseNodesWithSameId[idIdx];
-
-                    rescaleNode(node, baseNode);
-                }
-                else
-                {
-                    Tools.LogWf("Error scaling part. Node {0} does not have counterpart in base part.", node.id);
-                }
-            }
-            rescaleNode(part.srfAttachNode, prefabPart.srfAttachNode);
-        }
-
-        /// <summary>
         /// Updates properties that change linearly with scale.
         /// </summary>
         /// <param name="moveParts">Whether or not to move attached parts.</param>
-        private void updateByWidth(bool moveParts)
+        private void UpdateByWidth(bool moveParts)
         {
             if (defaultTransformScale.x == 0.0f)
             {
                 defaultTransformScale = part.transform.GetChild(0).localScale;
             }
 
-            savedScale = part.transform.GetChild(0).localScale = scalingFactor.absolute.linear * defaultTransformScale;
+            _savedScale = part.transform.GetChild(0).localScale = ScalingFactor.absolute.linear * defaultTransformScale;
             part.transform.GetChild(0).hasChanged = true;
             part.transform.hasChanged = true;
 
-            foreach (AttachNode node in part.attachNodes)
+            foreach (var node in part.attachNodes)
             {
                 var nodesWithSameId = part.attachNodes
                     .Where(a => a.id == node.id)
                     .ToArray();
                 var idIdx = Array.FindIndex(nodesWithSameId, a => a == node);
-                var baseNodesWithSameId = prefabPart.attachNodes
+                var baseNodesWithSameId = _prefabPart.attachNodes
                     .Where(a => a.id == node.id)
                     .ToArray();
                 if (idIdx < baseNodesWithSameId.Length)
                 {
                     var baseNode = baseNodesWithSameId[idIdx];
 
-                    moveNode(node, baseNode, moveParts);
+                    MoveNode(node, baseNode, moveParts);
                 }
                 else
                 {
@@ -419,26 +377,25 @@ namespace TweakScale
 
             if (part.srfAttachNode != null)
             {
-                moveNode(part.srfAttachNode, prefabPart.srfAttachNode, moveParts);
+                MoveNode(part.srfAttachNode, _prefabPart.srfAttachNode, moveParts);
             }
             if (moveParts)
             {
-                foreach (Part child in part.children)
+                foreach (var child in part.children)
                 {
-                    if (child.srfAttachNode != null && child.srfAttachNode.attachedPart == part) // part is attached to us, but not on destination node
-                    {
-                        Vector3 attachedPosition = child.transform.localPosition + child.transform.localRotation * child.srfAttachNode.position;
-                        Vector3 targetPosition = attachedPosition * scalingFactor.relative.linear;
-                        child.transform.Translate(targetPosition - attachedPosition, part.transform);
-                    }
+                    if (child.srfAttachNode == null || child.srfAttachNode.attachedPart != part)
+                        continue;
+                    var attachedPosition = child.transform.localPosition + child.transform.localRotation * child.srfAttachNode.position;
+                    var targetPosition = attachedPosition * ScalingFactor.relative.linear;
+                    child.transform.Translate(targetPosition - attachedPosition, part.transform);
                 }
-            };
+            }
         }
 
         /// <summary>
         /// Whether the part holds any resources (fuel, electricity, etc).
         /// </summary>
-        private bool hasResources
+        private bool HasResources
         {
             get
             {
@@ -449,17 +406,16 @@ namespace TweakScale
         /// <summary>
         /// Marks the right-click window as dirty (i.e. tells it to update).
         /// </summary>
-        private void updateWindow() // redraw the right-click window with the updated stats
+        private void UpdateWindow() // redraw the right-click window with the updated stats
         {
-            if (!isFreeScale && hasResources)
+            if (isFreeScale || !HasResources)
+                return;
+            foreach (UIPartActionWindow win in FindObjectsOfType(typeof(UIPartActionWindow)))
             {
-                foreach (UIPartActionWindow win in FindObjectsOfType(typeof(UIPartActionWindow)))
+                if (win.part == part)
                 {
-                    if (win.part == part)
-                    {
-                        // This causes the slider to be non-responsive - i.e. after you click once, you must click again, not drag the slider.
-                        win.displayDirty = true;
-                    }
+                    // This causes the slider to be non-responsive - i.e. after you click once, you must click again, not drag the slider.
+                    win.displayDirty = true;
                 }
             }
         }
@@ -468,7 +424,7 @@ namespace TweakScale
         {
             if (!isFreeScale)
             {
-                tweakScale = scaleFactors[tweakName];
+                tweakScale = ScaleFactors[tweakName];
             }
 
             if (!Input.GetKey(KeyCode.LeftShift))
@@ -478,7 +434,7 @@ namespace TweakScale
                     var ts = child.Modules.OfType<TweakScale>().FirstOrDefault();
                     if ((object)ts == null)
                         continue;
-                    if (ts.config != config)
+                    if (ts.Config != Config)
                         continue;
                     if (ts.tweakScale != currentScale)
                         continue;
@@ -491,50 +447,46 @@ namespace TweakScale
                 }
             }
 
-            updateByWidth(true);
-            updateWindow();
+            UpdateByWidth(true);
+            UpdateWindow();
 
-            foreach (var updater in updaters)
+            foreach (var updater in _updaters)
             {
-                updater.OnRescale(scalingFactor);
+                updater.OnRescale(ScalingFactor);
             }
             currentScale = tweakScale;
         }
 
         private bool CheckForDuplicateTweakScale()
         {
-            if (duplicate != Tristate.False)
+            if (_duplicate == Tristate.False)
+                return false;
+            if (_duplicate == Tristate.True)
             {
-                if (duplicate == Tristate.True)
-                {
-                    return true;
-                }
-                if (this != part.Modules.OfType<TweakScale>().First())
-                {
-                    Tools.LogWf("Duplicate TweakScale module on part [{0}] {1}", part.partInfo.name, part.partInfo.title);
-                    Fields["tweakScale"].guiActiveEditor = false;
-                    Fields["tweakName"].guiActiveEditor = false;
-                    duplicate = Tristate.True;
-                    return true;
-                }
-                duplicate = Tristate.False;
+                return true;
             }
+            if (this != part.Modules.OfType<TweakScale>().First())
+            {
+                Tools.LogWf("Duplicate TweakScale module on part [{0}] {1}", part.partInfo.name, part.partInfo.title);
+                Fields["tweakScale"].guiActiveEditor = false;
+                Fields["tweakName"].guiActiveEditor = false;
+                _duplicate = Tristate.True;
+                return true;
+            }
+            _duplicate = Tristate.False;
             return false;
         }
 
-        private bool invalidCfg = false;
         bool CheckForInvalidCfg()
         {
-            if (scaleFactors.Length == 0)
-            {
-                if (!invalidCfg)
-                {
-                    invalidCfg = true;
-                    Tools.LogWf("{0}({1}) has no valid scale factors. This is probably caused by an invalid TweakScale configuration for the part.", part.name, part.partInfo.title);
-                }
+            if (ScaleFactors.Length != 0) 
+                return false;
+            if (_invalidCfg) 
                 return true;
-            }
-            return false;
+
+            _invalidCfg = true;
+            Tools.LogWf("{0}({1}) has no valid scale factors. This is probably caused by an invalid TweakScale configuration for the part.", part.name, part.partInfo.title);
+            return true;
         }
 
         public void Update()
@@ -544,33 +496,33 @@ namespace TweakScale
                 return;
             }
 
-            if (firstUpdateWithParent && (object)part.parent != null)
+            if (_firstUpdateWithParent && (object)part.parent != null)
             {
                 var ts = part.parent.Modules.OfType<TweakScale>().FirstOrDefault();
-                if ((object)ts != null && ts.config == config)
+                if ((object)ts != null && ts.Config == Config)
                 {
-                    Tools.Logf("Changing size based on parent! ts: {0} this: {1}", ts.config.name, config.name);
+                    Tools.Logf("Changing size based on parent! ts: {0} this: {1}", ts.Config.Name, Config.Name);
                     tweakName = ts.tweakName;
                     tweakScale = ts.tweakScale;
                 }
-                firstUpdateWithParent = false;
+                _firstUpdateWithParent = false;
             }
 
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
             {
-                bool changed = currentScale != (isFreeScale ? tweakScale : scaleFactors[tweakName]);
+                var changed = currentScale != (isFreeScale ? tweakScale : ScaleFactors[tweakName]);
 
                 if (changed) // user has changed the scale tweakable
                 {
                     OnTweakScaleChanged();
                 }
-                else if (part.transform.GetChild(0).localScale != savedScale) // editor frequently nukes our OnStart resize some time later
+                else if (part.transform.GetChild(0).localScale != _savedScale) // editor frequently nukes our OnStart resize some time later
                 {
-                    updateByWidth(false);
+                    UpdateByWidth(false);
                 }
             }
 
-            foreach (var upd in updaters.OfType<IUpdateable>())
+            foreach (var upd in _updaters.OfType<IUpdateable>())
             {
                 upd.OnUpdate();
             }
@@ -578,11 +530,11 @@ namespace TweakScale
 
         public float GetModuleCost()
         {
-            if (!setupRun)
+            if (!_setupRun)
             {
                 Setup();
             }
-            return (float)(dryCost - part.partInfo.cost + part.Resources.Cast<PartResource>().Aggregate(0.0, (a, b) => a + b.maxAmount * b.info.unitCost));
+            return (float)(DryCost - part.partInfo.cost + part.Resources.Cast<PartResource>().Aggregate(0.0, (a, b) => a + b.maxAmount * b.info.unitCost));
         }
     }
 }

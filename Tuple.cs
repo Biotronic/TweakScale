@@ -80,7 +80,7 @@ namespace TweakScale
             var other = obj as Tuple<T1, T2>;
             if (other == null)
             {
-                throw new ArgumentException("Invalid comparison: " + this.GetType().FullName + " vs " + obj.GetType().FullName);
+                throw new ArgumentException("Invalid comparison: " + GetType().FullName + " vs " + obj.GetType().FullName);
             }
             var result = cmp.Compare(Item1, other.Item1);
             if (result != 0)

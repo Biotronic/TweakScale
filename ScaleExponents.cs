@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 
 namespace TweakScale
@@ -20,8 +19,8 @@ namespace TweakScale
     {
         struct ScalingMode
         {
-            public string Exponent { get; set; }
-            public bool UseRelativeScaling { get; set; }
+            public readonly string Exponent;
+            public readonly bool UseRelativeScaling;
 
             public ScalingMode(string exponent, bool useRelativeScaling)
                 : this()
@@ -31,20 +30,20 @@ namespace TweakScale
             }
         }
 
-        private string _id;
-        private string _name;
-        private Dictionary<string, ScalingMode> _exponents;
-        private List<string> _ignores;
-        private Dictionary<string, ScaleExponents> _children;
+        private readonly string _id;
+        private readonly string _name;
+        private readonly Dictionary<string, ScalingMode> _exponents;
+        private readonly List<string> _ignores;
+        private readonly Dictionary<string, ScaleExponents> _children;
 
-        private static Dictionary<string, ScaleExponents> globalList;
-        private static bool globalListLoaded = false;
+        private static Dictionary<string, ScaleExponents> _globalList;
+        private static bool _globalListLoaded;
 
-        private const string exponentConfigName = "TWEAKSCALEEXPONENTS";
+        private const string ExponentConfigName = "TWEAKSCALEEXPONENTS";
 
         private static bool IsExponentBlock(ConfigNode node)
         {
-            return node.name == exponentConfigName || node.name == "MODULE";
+            return node.name == ExponentConfigName || node.name == "MODULE";
         }
 
         /// <summary>
@@ -52,17 +51,16 @@ namespace TweakScale
         /// </summary>
         public static void LoadGlobalExponents()
         {
-            if (!globalListLoaded)
-            {
-                var tmp = GameDatabase.Instance.GetConfigs(exponentConfigName)
-                    .Select(a => new ScaleExponents(a.config));
+            if (_globalListLoaded)
+                return;
+            var tmp = GameDatabase.Instance.GetConfigs(ExponentConfigName)
+                .Select(a => new ScaleExponents(a.config));
 
-                globalList = tmp
-                    .GroupBy(a => a._id)
-                    .Select(a => a.Aggregate((b, c) => Merge(b, c)))
-                    .ToDictionary(a => a._id, a => a);
-                globalListLoaded = true;
-            }
+            _globalList = tmp
+                .GroupBy(a => a._id)
+                .Select(a => a.Aggregate(Merge))
+                .ToDictionary(a => a._id, a => a);
+            _globalListLoaded = true;
         }
 
         /// <summary>
@@ -77,21 +75,12 @@ namespace TweakScale
         private ScaleExponents(ScaleExponents source)
         {
             _id = source._id;
-            if (source == null)
-            {
-                _exponents = new Dictionary<string, ScalingMode>();
-                _children = new Dictionary<string, ScaleExponents>();
-                _ignores = new List<string>();
-            }
-            else
-            {
-                _exponents = source._exponents.Clone();
-                _children = source
-                    ._children
-                    .Select(a => new KeyValuePair<string, ScaleExponents>(a.Key, a.Value.Clone()))
-                    .ToDictionary(a => a.Key, a => a.Value);
-                _ignores = new List<string>(source._ignores);
-            }
+            _exponents = source._exponents.Clone();
+            _children = source
+                ._children
+                .Select(a => new KeyValuePair<string, ScaleExponents>(a.Key, a.Value.Clone()))
+                .ToDictionary(a => a.Key, a => a.Value);
+            _ignores = new List<string>(source._ignores);
         }
 
         private ScaleExponents(ConfigNode node, ScaleExponents source = null)
@@ -155,19 +144,13 @@ namespace TweakScale
             {
                 Tools.LogWf("Wrong merge target! A name {0}, B name {1}", destination._id, source._id);
             }
-            foreach (var value in source._exponents)
+            foreach (var value in source._exponents.Where(value => !destination._exponents.ContainsKey(value.Key)))
             {
-                if (!destination._exponents.ContainsKey(value.Key))
-                {
-                    destination._exponents[value.Key] = value.Value;
-                }
+                destination._exponents[value.Key] = value.Value;
             }
-            foreach (string value in source._ignores)
+            foreach (var value in source._ignores.Where(value => !destination._ignores.Contains(value)))
             {
-                if (!destination._ignores.Contains(value))
-                {
-                    destination._ignores.Add(value);
-                }
+                destination._ignores.Add(value);
             }
             foreach (var child in source._children)
             {
@@ -186,16 +169,16 @@ namespace TweakScale
         /// <summary>
         /// Rescales destination exponentValue according to its associated exponent.
         /// </summary>
-        /// <param name="currentValue">The current exponentValue.</param>
+        /// <param name="current">The current exponentValue.</param>
         /// <param name="baseValue">The unscaled exponentValue, gotten from the prefab.</param>
         /// <param name="name">The name of the field.</param>
+        /// <param name="scalingMode">Information on exactly how to scale this.</param>
         /// <param name="factor">The rescaling factor.</param>
-        /// <param name="relative">Whether to use relative or absolute scaling.</param>
         /// <returns>The rescaled exponentValue.</returns>
         static private void Rescale(MemberUpdater current, MemberUpdater baseValue, string name, ScalingMode scalingMode, ScalingFactor factor)
         {
             var exponentValue = scalingMode.Exponent;
-            double exponent = double.NaN;
+            var exponent = double.NaN;
             double[] values = null;
             if (exponentValue.Contains(','))
             {
@@ -222,7 +205,7 @@ namespace TweakScale
                 var v = (IList)current.Value;
                 var v2 = (IList)baseValue.Value;
 
-                for (int i = 0; i < v.Count && i < v2.Count; ++i)
+                for (var i = 0; i < v.Count && i < v2.Count; ++i)
                 {
                     if (values != null)
                     {
@@ -252,9 +235,13 @@ namespace TweakScale
             }
             else if (!double.IsNaN(exponent))
             {
-
                 current.Scale(Math.Pow(scalingMode.UseRelativeScaling ? factor.relative.linear : factor.absolute.linear, exponent), baseValue);
             }
+        }
+
+        private bool ShouldIgnore(Part part)
+        {
+            return _ignores.Any(v => part.Modules.Contains(v));
         }
 
         /// <summary>
@@ -267,9 +254,7 @@ namespace TweakScale
         private void UpdateFields(object obj, object baseObj, ScalingFactor factor, Part part)
         {
             if ((object)obj == null)
-            {
                 return;
-            }
 
             if (obj is PartModule && obj.GetType().Name != _id)
             {
@@ -277,17 +262,8 @@ namespace TweakScale
                 return;
             }
 
-            // Skip update if ignore module exists.
-            if ((object)part != null)
-            {
-                foreach (string v in _ignores)
-                {
-                    if (part.Modules.Contains(v))
-                    {
-                        return;
-                    }
-                }
-            }
+            if (ShouldIgnore(part))
+                return;
 
             if (obj is IEnumerable)
             {
@@ -302,26 +278,19 @@ namespace TweakScale
                 {
                     continue;
                 }
-                var baseObjTmp = baseObj;
-                if (nameExponentKV.Value.UseRelativeScaling)
-                {
-                    // Forced relative scaling. Don't even dare look at the prefab!
-                    baseObjTmp = null;
-                }
 
-                var baseValue = MemberUpdater.Create(baseObj, nameExponentKV.Key);
+                var baseValue = nameExponentKV.Value.UseRelativeScaling ? null : MemberUpdater.Create(baseObj, nameExponentKV.Key);
                 Rescale(value, baseValue ?? value, nameExponentKV.Key, nameExponentKV.Value, factor);
             }
 
-            foreach (var _child in _children)
+            foreach (var child in _children)
             {
-                string childName = _child.Key;
+                var childName = child.Key;
                 var childObjField = MemberUpdater.Create(obj, childName);
-                if (childObjField != null && _child.Value != null)
-                {
-                    var baseChildObjField = MemberUpdater.Create(baseObj, childName);
-                    _child.Value.UpdateFields(childObjField.Value, (baseChildObjField ?? childObjField).Value, factor, part);
-                }
+                if (childObjField == null || child.Value == null)
+                    continue;
+                var baseChildObjField = MemberUpdater.Create(baseObj, childName);
+                child.Value.UpdateFields(childObjField.Value, (baseChildObjField ?? childObjField).Value, factor, part);
             }
         }
 
@@ -334,7 +303,7 @@ namespace TweakScale
         /// <param name="part">The part the object is on.</param>
         private void UpdateEnumerable(IEnumerable obj, IEnumerable prefabObj, ScalingFactor factor, Part part = null)
         {
-            IEnumerable other = prefabObj;
+            var other = prefabObj;
             if (prefabObj == null || obj.StupidCount() != prefabObj.StupidCount())
             {
                 other = ((object)null).Repeat().Take(obj.StupidCount());
@@ -359,8 +328,8 @@ namespace TweakScale
 
         struct ModuleAndPrefab
         {
-            public object Current { get; set; }
-            public object Prefab { get; set; }
+            public object Current { get; private set; }
+            public object Prefab { get; private set; }
 
             private ModuleAndPrefab(object current, object prefab)
                 : this()
@@ -377,9 +346,9 @@ namespace TweakScale
 
         struct ModulesAndExponents
         {
-            public object Current { get; set; }
-            public object Prefab { get; set; }
-            public ScaleExponents Exponents { get; set; }
+            public object Current { get; private set; }
+            public object Prefab { get; private set; }
+            public ScaleExponents Exponents { get; private set; }
 
             private ModulesAndExponents(ModuleAndPrefab modules, ScaleExponents exponents)
                 : this()
@@ -434,7 +403,7 @@ namespace TweakScale
                 }
             }
 
-            foreach (var gExp in globalList.Values)
+            foreach (var gExp in _globalList.Values)
             {
                 if (local.ContainsKey(gExp._id))
                 {

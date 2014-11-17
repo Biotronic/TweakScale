@@ -15,7 +15,7 @@ namespace TweakScale
 
     public static class Tech
     {
-        private static HashSet<string> unlockedTechs = new HashSet<string>();
+        private static HashSet<string> _unlockedTechs = new HashSet<string>();
 
         public static void Reload()
         {
@@ -24,15 +24,17 @@ namespace TweakScale
             if (HighLogic.CurrentGame.Mode != Game.Modes.CAREER && HighLogic.CurrentGame.Mode != Game.Modes.SCIENCE_SANDBOX)
                 return;
 
-            string persistentfile = KSPUtil.ApplicationRootPath + "saves/" + HighLogic.SaveFolder + "/persistent.sfs";
-            ConfigNode config = ConfigNode.Load(persistentfile);
-            ConfigNode gameconf = config.GetNode("GAME");
-            ConfigNode[] scenarios = gameconf.GetNodes("SCENARIO");
-            ConfigNode thisScenario = scenarios.FirstOrDefault(a => a.GetValue("name") == "ResearchAndDevelopment");
-            ConfigNode[] techs = thisScenario.GetNodes("Tech");
+            var persistentfile = KSPUtil.ApplicationRootPath + "saves/" + HighLogic.SaveFolder + "/persistent.sfs";
+            var config = ConfigNode.Load(persistentfile);
+            var gameconf = config.GetNode("GAME");
+            var scenarios = gameconf.GetNodes("SCENARIO");
+            var thisScenario = scenarios.FirstOrDefault(a => a.GetValue("name") == "ResearchAndDevelopment");
+            if (thisScenario == null)
+                return;
+            var techs = thisScenario.GetNodes("Tech");
 
-            unlockedTechs = techs.Select(a => a.GetValue("id")).ToHashSet();
-            unlockedTechs.Add("");
+            _unlockedTechs = techs.Select(a => a.GetValue("id")).ToHashSet();
+            _unlockedTechs.Add("");
         }
 
         public static bool IsUnlocked(string techId)
@@ -41,9 +43,7 @@ namespace TweakScale
                 return true;
             if (HighLogic.CurrentGame.Mode != Game.Modes.CAREER && HighLogic.CurrentGame.Mode != Game.Modes.SCIENCE_SANDBOX)
                 return true;
-            if (techId == "")
-                return true;
-            return unlockedTechs.Contains(techId);
+            return techId == "" || _unlockedTechs.Contains(techId);
         }
     }
 
@@ -64,38 +64,35 @@ namespace TweakScale
             {
                 Tools.LogWf("No SCALETYPE with name {0}", name);
             }
-            return (object)config == null ? defaultConfig : new ScaleConfig(config.config);
+            return (object)config == null ? DefaultConfig : new ScaleConfig(config.config);
         }
 
-        private static ScaleConfig[] configs;
+        private static ScaleConfig[] _configs;
         public static ScaleConfig[] AllConfigs
         {
-            get
-            {
-                if (configs == null)
-                {
-                    configs = GameDatabase.Instance.GetConfigs("SCALETYPE").Select(a => new ScaleConfig(a.config)).ToArray();
-                }
-                return configs;
+            get {
+                return _configs = _configs ??
+                        (GameDatabase.Instance.GetConfigs("SCALETYPE")
+                            .Select(a => new ScaleConfig(a.config))
+                            .ToArray());
             }
         }
 
-        private static ScaleConfig defaultConfig = new ScaleConfig();
+        private static readonly ScaleConfig DefaultConfig = new ScaleConfig();
 
-        private float[] _scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
-        private int[] _scaleNodes = { };
-        private string[] _scaleNames = { "62.5cm", "1.25m", "2.5m", "3.75m", "5m" };
-        public Dictionary<string, ScaleExponents> exponents = new Dictionary<string, ScaleExponents>(); 
+        private readonly float[] _scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
+        private readonly string[] _scaleNames = { "62.5cm", "1.25m", "2.5m", "3.75m", "5m" };
+        public readonly Dictionary<string, ScaleExponents> Exponents = new Dictionary<string, ScaleExponents>();
 
-        public bool isFreeScale = false;
-        public string[] techRequired = { "", "", "", "", "" };
-        public float minValue = 0.625f;
-        public float maxValue = 5.0f;
-        public float defaultScale = 1.25f;
-        public string suffix = "m";
-        public string name;
+        public readonly bool IsFreeScale = false;
+        public readonly string[] TechRequired = { "", "", "", "", "" };
+        public readonly float MinValue = 0.625f;
+        public readonly float MaxValue = 5.0f;
+        public readonly float DefaultScale = 1.25f;
+        public readonly string Suffix = "m";
+        public readonly string Name;
 
-        public float[] allScaleFactors
+        public float[] AllScaleFactors
         {
             get
             {
@@ -103,38 +100,34 @@ namespace TweakScale
             }
         }
 
-        public float[] scaleFactors
+        public float[] ScaleFactors
         {
             get
             {
-                var result = _scaleFactors.ZipFilter(techRequired, Tech.IsUnlocked).ToArray();
+                var result = _scaleFactors.ZipFilter(TechRequired, Tech.IsUnlocked).ToArray();
                 return result;
             }
         }
 
-        public string[] scaleNames
+        public string[] ScaleNames
         {
             get
             {
-                var result = _scaleNames.ZipFilter(techRequired, Tech.IsUnlocked).ToArray();
+                var result = _scaleNames.ZipFilter(TechRequired, Tech.IsUnlocked).ToArray();
                 return result;
             }
         }
-        
-        public int[] scaleNodes
-        {
-			get
-			{
-				return _scaleNodes;
-			}
-        }
+
+        public int[] ScaleNodes { get; private set; }
 
         private ScaleConfig()
         {
+            ScaleNodes = new int[] {};
         }
 
         public ScaleConfig(ConfigNode config)
         {
+            ScaleNodes = new int[] {};
             if ((object)config == null || Tools.ConfigValue(config, "name", "default") == "default")
             {
                 return; // Default values.
@@ -143,18 +136,18 @@ namespace TweakScale
             var type = Tools.ConfigValue(config, "type", "default");
             var source = GetScaleConfig(type);
 
-            isFreeScale   = Tools.ConfigValue(config, "freeScale",    defaultValue: source.isFreeScale);
-            minValue      = Tools.ConfigValue(config, "minScale",     defaultValue: source.minValue);
-            maxValue      = Tools.ConfigValue(config, "maxScale",     defaultValue: source.maxValue);
-            suffix        = Tools.ConfigValue(config, "suffix",       defaultValue: source.suffix);
-            _scaleFactors = Tools.ConfigValue(config, "scaleFactors", defaultValue: source._scaleFactors);
-            _scaleNodes   = Tools.ConfigValue(config, "scaleNodes",   defaultValue: source._scaleNodes);
-            _scaleNames   = Tools.ConfigValue(config, "scaleNames",   defaultValue: source._scaleNames).Select(a => a.Trim()).ToArray();
-            techRequired  = Tools.ConfigValue(config, "techRequired", defaultValue: source.techRequired).Select(a=>a.Trim()).ToArray();
-            name          = Tools.ConfigValue(config, "name",         defaultValue: "unnamed scaletype");
-            if (name == "TweakScale")
+            IsFreeScale   = Tools.ConfigValue(config, "freeScale",    source.IsFreeScale);
+            MinValue      = Tools.ConfigValue(config, "minScale",     source.MinValue);
+            MaxValue      = Tools.ConfigValue(config, "maxScale",     source.MaxValue);
+            Suffix        = Tools.ConfigValue(config, "suffix",       source.Suffix);
+            _scaleFactors = Tools.ConfigValue(config, "scaleFactors", source._scaleFactors);
+            ScaleNodes    = Tools.ConfigValue(config, "scaleNodes",   source.ScaleNodes);
+            _scaleNames   = Tools.ConfigValue(config, "scaleNames",   source._scaleNames).Select(a => a.Trim()).ToArray();
+            TechRequired  = Tools.ConfigValue(config, "techRequired", source.TechRequired).Select(a=>a.Trim()).ToArray();
+            Name          = Tools.ConfigValue(config, "name",         "unnamed scaletype");
+            if (Name == "TweakScale")
             {
-                name = source.name;
+                Name = source.Name;
             }
 
             if (_scaleFactors.Length != _scaleNames.Length)
@@ -162,39 +155,37 @@ namespace TweakScale
                 Tools.LogWf("Wrong number of scaleFactors compared to scaleNames: {0} scaleFactors vs {1} scaleNames", _scaleFactors.Length, _scaleNames.Length);
             }
 
-            if (techRequired.Length < _scaleFactors.Length)
+            if (TechRequired.Length < _scaleFactors.Length)
             {
-                techRequired = techRequired.Concat("".Repeat()).Take(_scaleFactors.Length).ToArray();
+                TechRequired = TechRequired.Concat("".Repeat()).Take(_scaleFactors.Length).ToArray();
             }
 
-            var tmpScale = Tools.ConfigValue(config, "defaultScale", defaultValue: source.defaultScale);
-            if (!isFreeScale)
+            var tmpScale = Tools.ConfigValue(config, "defaultScale", source.DefaultScale);
+            if (!IsFreeScale)
             {
-                tmpScale = Tools.Closest(tmpScale, allScaleFactors);
+                tmpScale = Tools.Closest(tmpScale, AllScaleFactors);
             }
-            defaultScale = Tools.clamp(tmpScale, minValue, maxValue);
+            DefaultScale = Tools.Clamp(tmpScale, MinValue, MaxValue);
 
-            exponents = ScaleExponents.CreateExponentsForModule(config, source.exponents);
+            Exponents = ScaleExponents.CreateExponentsForModule(config, source.Exponents);
         }
 
         public override string ToString()
         {
-            string result = "ScaleConfig {\n";
-            result += "	isFreeScale = " + isFreeScale.ToString() + "\n";
-            result += "	scaleFactors = " + scaleFactors.ToString() + "\n";
-            result += " scaleNodes = " + scaleNodes.ToString() + "\n";
-            result += "	minValue = " + minValue.ToString() + "\n";
-            result += "	maxValue = " + maxValue.ToString() + "\n";
+            var result = "ScaleConfig {\n";
+            result += "	isFreeScale = " + IsFreeScale + "\n";
+            result += "	scaleFactors = " + ScaleFactors + "\n";
+            result += " scaleNodes = " + ScaleNodes + "\n";
+            result += "	minValue = " + MinValue + "\n";
+            result += "	maxValue = " + MaxValue + "\n";
             return result + "}";
         }
 
         public override bool Equals(object obj)
         {
-            if (obj is ScaleConfig)
-            {
-                return this == (obj as ScaleConfig);
-            }
-            return false;
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            return obj.GetType() == GetType() && Equals((ScaleConfig) obj);
         }
 
         public static bool operator ==(ScaleConfig a, ScaleConfig b)
@@ -203,12 +194,22 @@ namespace TweakScale
                 return (object)b == null;
             if ((object)b == null)
                 return false;
-            return a.name == b.name;
+            return a.Name == b.Name;
         }
 
         public static bool operator !=(ScaleConfig a, ScaleConfig b)
         {
             return !(a == b);
+        }
+
+        protected bool Equals(ScaleConfig other)
+        {
+            return string.Equals(Name, other.Name);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Name != null ? Name.GetHashCode() : 0);
         }
     }
 }

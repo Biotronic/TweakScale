@@ -1,18 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using UnityEngine;
 
 namespace TweakScale
 {
     public class MemberUpdater
     {
-        object _object = null;
-        FieldInfo _field = null;
-        PropertyInfo _property = null;
-        UI_FloatRange _floatRange = null;
+        readonly object _object;
+        readonly FieldInfo _field;
+        readonly PropertyInfo _property;
+        readonly UI_FloatRange _floatRange;
 
         public static MemberUpdater Create(object obj, string name)
         {
@@ -67,14 +64,11 @@ namespace TweakScale
                 {
                     return _field.GetValue(_object);
                 }
-                else if (_property != null)
+                if (_property != null)
                 {
                     return _property.GetValue(_object, null);
                 }
-                else
-                {
-                    return null;
-                }
+                return null;
             }
         }
 
@@ -86,7 +80,7 @@ namespace TweakScale
                 {
                     return _field.FieldType;
                 }
-                else if (_property != null)
+                if (_property != null)
                 {
                     return _property.PropertyType;
                 }
@@ -113,7 +107,7 @@ namespace TweakScale
                 return;
             }
 
-            object newValue = Value;
+            var newValue = Value;
             if (MemberType == typeof(float))
             {
                 Set((float)newValue * (float)scale);

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,16 +8,16 @@ namespace TweakScale
 {
     public abstract class RescalableRegistratorAddon : MonoBehaviour
     {
-        private static bool loadedInScene = false;
+        private static bool _loadedInScene;
 
         public void Start()
         {
-            if (loadedInScene)
+            if (_loadedInScene)
             {
                 Destroy(gameObject);
                 return;
             }
-            loadedInScene = true;
+            _loadedInScene = true;
             OnStart();
         }
 
@@ -26,7 +25,7 @@ namespace TweakScale
 
         public void Update()
         {
-            loadedInScene = false;
+            _loadedInScene = false;
             Destroy(gameObject);
         }
     }
@@ -53,12 +52,11 @@ namespace TweakScale
         private static void RegisterGenericRescalable(Type resc, Type arg)
         {
             var c = resc.GetConstructor(new[] { arg });
-            if (c != null)
-            {
-                Func<PartModule, IRescalable> creator = (PartModule pm) => (IRescalable)c.Invoke(new[] { pm });
+            if (c == null)
+                return;
+            Func<PartModule, IRescalable> creator = pm => (IRescalable)c.Invoke(new[] { pm });
 
-                TweakScaleUpdater.RegisterUpdater(arg, creator);
-            }
+            TweakScaleUpdater.RegisterUpdater(arg, creator);
         }
 
         private static bool IsGenericRescalable(Type t)
@@ -72,12 +70,12 @@ namespace TweakScale
     static class TweakScaleUpdater
     {
         // Every kind of updater is registered here, and the correct kind of updater is created for each PartModule.
-        static Dictionary<Type, Func<PartModule, IRescalable>> ctors = new Dictionary<Type, Func<PartModule, IRescalable>>();
+        static readonly Dictionary<Type, Func<PartModule, IRescalable>> ctors = new Dictionary<Type, Func<PartModule, IRescalable>>();
 
         /// <summary>
-        /// Registers an updater for partmodules the name <paramref name="moduleName"/>.
+        /// Registers an updater for partmodules of type <paramref name="pm"/>.
         /// </summary>
-        /// <param name="moduleName">Name of the PartModule type to update.</param>
+        /// <param name="pm">Type of the PartModule type to update.</param>
         /// <param name="creator">A function that creates an updater for this PartModule type.</param>
         static public void RegisterUpdater(Type pm, Func<PartModule, IRescalable> creator)
         {
@@ -85,7 +83,7 @@ namespace TweakScale
         }
 
         // Creates an updater for each modules attached to destination part.
-        public static IEnumerable<IRescalable> createUpdaters(Part part)
+        public static IEnumerable<IRescalable> CreateUpdaters(Part part)
         {
             foreach (var mod in part.Modules.Cast<PartModule>())
             {
@@ -119,9 +117,9 @@ namespace TweakScale
     /// </summary>
     class TSGenericUpdater : IRescalable
     {
-        Part _part;
-        Part _basePart;
-        TweakScale _ts;
+        private readonly Part _part;
+        private readonly Part _basePart;
+        private readonly TweakScale _ts;
 
         public TSGenericUpdater(Part part)
         {
@@ -132,7 +130,7 @@ namespace TweakScale
 
         public void OnRescale(ScalingFactor factor)
         {
-            ScaleExponents.UpdateObject(_part, _basePart, _ts.config.exponents, factor);
+            ScaleExponents.UpdateObject(_part, _basePart, _ts.Config.exponents, factor);
         }
     }
 
@@ -145,32 +143,30 @@ namespace TweakScale
     {
         private struct EmitterData
         {
-            public float minSize, maxSize, shape1D;
-            public Vector2 shape2D;
-            public Vector3 shape3D, localVelocity, force;
+            public readonly float MinSize, MaxSize, Shape1D;
+            public readonly Vector2 Shape2D;
+            public readonly Vector3 Shape3D, LocalVelocity, Force;
 
             public EmitterData(KSPParticleEmitter pe)
             {
-                minSize = pe.minSize;
-                maxSize = pe.maxSize;
-                localVelocity = pe.localVelocity;
-                shape1D = pe.shape1D;
-                shape2D = pe.shape2D;
-                shape3D = pe.shape3D;
-                force = pe.force;
+                MinSize = pe.minSize;
+                MaxSize = pe.maxSize;
+                LocalVelocity = pe.localVelocity;
+                Shape1D = pe.shape1D;
+                Shape2D = pe.shape2D;
+                Shape3D = pe.shape3D;
+                Force = pe.force;
             }
         }
 
-        Part _part;
-        Part _basePart;
-        TweakScale _ts;
+        readonly Part _part;
+        readonly TweakScale _ts;
         bool _rescale = true;
-        Dictionary<KSPParticleEmitter, EmitterData> _scales = new Dictionary<KSPParticleEmitter, EmitterData>();
+        readonly Dictionary<KSPParticleEmitter, EmitterData> _scales = new Dictionary<KSPParticleEmitter, EmitterData>();
 
         public EmitterUpdater(Part part)
         {
             _part = part;
-            _basePart = PartLoader.getPartInfoByName(part.partInfo.name).partPrefab;
             _ts = part.Modules.OfType<TweakScale>().First();
         }
 
@@ -179,8 +175,8 @@ namespace TweakScale
             _rescale = true;
         }
 
-        private static FieldInfo mmpFxField = null;
-        private static FieldInfo mpFxField = null;
+        private static FieldInfo _mmpFxField;
+        private static FieldInfo _mpFxField;
 
         private void UpdateParticleEmitter(KSPParticleEmitter pe)
         {
@@ -196,53 +192,51 @@ namespace TweakScale
             }
             var ed = _scales[pe];
 
-            pe.minSize = ed.minSize * factor.absolute.linear;
-            pe.maxSize = ed.maxSize * factor.absolute.linear;
-            pe.shape1D = ed.shape1D * factor.absolute.linear;
-            pe.shape2D = ed.shape2D * factor.absolute.linear;
-            pe.shape3D = ed.shape3D * factor.absolute.linear;
+            pe.minSize = ed.MinSize * factor.absolute.linear;
+            pe.maxSize = ed.MaxSize * factor.absolute.linear;
+            pe.shape1D = ed.Shape1D * factor.absolute.linear;
+            pe.shape2D = ed.Shape2D * factor.absolute.linear;
+            pe.shape3D = ed.Shape3D * factor.absolute.linear;
 
-            pe.force = ed.force * factor.absolute.linear;
+            pe.force = ed.Force * factor.absolute.linear;
 
-            pe.localVelocity = ed.localVelocity * factor.absolute.linear;
+            pe.localVelocity = ed.LocalVelocity * factor.absolute.linear;
         }
 
         private static void GetFieldInfos()
         {
-            if (mmpFxField == null)
-                mmpFxField = typeof(ModelMultiParticleFX).GetNonPublicFieldByType<List<KSPParticleEmitter>>();
-            if (mpFxField == null)
-                mpFxField = typeof(ModelParticleFX).GetNonPublicFieldByType<KSPParticleEmitter>();
+            if (_mmpFxField == null)
+                _mmpFxField = typeof(ModelMultiParticleFX).GetNonPublicFieldByType<List<KSPParticleEmitter>>();
+            if (_mpFxField == null)
+                _mpFxField = typeof(ModelParticleFX).GetNonPublicFieldByType<KSPParticleEmitter>();
         }
 
         public void OnUpdate()
         {
-            if (_rescale)
-            {
-                GetFieldInfos();
+            if (!_rescale)
+                return;
+            GetFieldInfos();
 
-                var fxn = _part.GetComponents<EffectBehaviour>();
-                _rescale = fxn.Length != 0;
-                foreach (var fx in fxn)
+            var fxn = _part.GetComponents<EffectBehaviour>();
+            _rescale = fxn.Length != 0;
+            foreach (var fx in fxn)
+            {
+                if (fx is ModelMultiParticleFX)
                 {
-                    if (fx is ModelMultiParticleFX)
+                    var p = _mmpFxField.GetValue(fx) as List<KSPParticleEmitter>;
+                    if (p == null)
+                        continue;
+                    foreach (var pe in p)
                     {
-                        var p = mmpFxField.GetValue(fx) as List<KSPParticleEmitter>;
-                        if (p != null)
-                        {
-                            foreach (var pe in p)
-                            {
-                                UpdateParticleEmitter(pe);
-                            }
-                            _rescale = false;
-                        }
-                    }
-                    else if (fx is ModelParticleFX)
-                    {
-                        var pe = mpFxField.GetValue(fx) as KSPParticleEmitter;
                         UpdateParticleEmitter(pe);
-                        _rescale = false;
                     }
+                    _rescale = false;
+                }
+                else if (fx is ModelParticleFX)
+                {
+                    var pe = _mpFxField.GetValue(fx) as KSPParticleEmitter;
+                    UpdateParticleEmitter(pe);
+                    _rescale = false;
                 }
             }
         }
