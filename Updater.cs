@@ -35,7 +35,7 @@ namespace TweakScale
     {
         override public void OnStart()
         {
-            var genericRescalable = Tools.getAllTypes()
+            var genericRescalable = Tools.GetAllTypes()
                 .Where(IsGenericRescalable)
                 .ToArray();
 
@@ -54,7 +54,7 @@ namespace TweakScale
             var c = resc.GetConstructor(new[] { arg });
             if (c == null)
                 return;
-            Func<PartModule, IRescalable> creator = pm => (IRescalable)c.Invoke(new[] { pm });
+            Func<PartModule, IRescalable> creator = pm => (IRescalable)c.Invoke(new object[] { pm });
 
             TweakScaleUpdater.RegisterUpdater(arg, creator);
         }
@@ -70,7 +70,7 @@ namespace TweakScale
     static class TweakScaleUpdater
     {
         // Every kind of updater is registered here, and the correct kind of updater is created for each PartModule.
-        static readonly Dictionary<Type, Func<PartModule, IRescalable>> ctors = new Dictionary<Type, Func<PartModule, IRescalable>>();
+        static readonly Dictionary<Type, Func<PartModule, IRescalable>> Ctors = new Dictionary<Type, Func<PartModule, IRescalable>>();
 
         /// <summary>
         /// Registers an updater for partmodules of type <paramref name="pm"/>.
@@ -79,35 +79,31 @@ namespace TweakScale
         /// <param name="creator">A function that creates an updater for this PartModule type.</param>
         static public void RegisterUpdater(Type pm, Func<PartModule, IRescalable> creator)
         {
-            ctors[pm] = creator;
+            Ctors[pm] = creator;
         }
 
         // Creates an updater for each modules attached to destination part.
         public static IEnumerable<IRescalable> CreateUpdaters(Part part)
         {
-            foreach (var mod in part.Modules.Cast<PartModule>())
+            var myUpdaters = part
+                .Modules.Cast<PartModule>()
+                .Select(CreateUpdater)
+                .Where(updater => updater != null);
+            foreach (var updater in myUpdaters)
             {
-                var updater = createUpdater(mod);
-                if (updater != null)
-                {
-                    yield return updater;
-                }
+                yield return updater;
             }
             yield return new TSGenericUpdater(part);
             yield return new EmitterUpdater(part);
         }
 
-        private static IRescalable createUpdater(PartModule module)
+        private static IRescalable CreateUpdater(PartModule module)
         {
             if (module is IRescalable)
             {
                 return module as IRescalable;
             }
-            if (ctors.ContainsKey(module.GetType()))
-            {
-                return ctors[module.GetType()](module);
-            }
-            return null;
+            return Ctors.ContainsKey(module.GetType()) ? Ctors[module.GetType()](module) : null;
         }
     }
 
@@ -130,7 +126,7 @@ namespace TweakScale
 
         public void OnRescale(ScalingFactor factor)
         {
-            ScaleExponents.UpdateObject(_part, _basePart, _ts.Config.exponents, factor);
+            ScaleExponents.UpdateObject(_part, _basePart, _ts.Config.Exponents, factor);
         }
     }
 
@@ -184,7 +180,7 @@ namespace TweakScale
             {
                 return;
             }
-            var factor = _ts.scalingFactor;
+            var factor = _ts.ScalingFactor;
 
             if (!_scales.ContainsKey(pe))
             {

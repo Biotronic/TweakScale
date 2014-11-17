@@ -135,8 +135,8 @@ namespace TweakScale
         /// <summary>
         /// Creates destination copy of destination dictionary.
         /// </summary>
-        /// <typeparam name="K">The key type.</typeparam>
-        /// <typeparam name="V">The exponentValue type.</typeparam>
+        /// <typeparam name="TK">The key type.</typeparam>
+        /// <typeparam name="TV">The exponentValue type.</typeparam>
         /// <param name="source">The dictionary to copy.</param>
         /// <returns>A copy of <paramref name="source"/>.</returns>
         public static Dictionary<TK, TV> Clone<TK, TV>(this Dictionary<TK, TV> source)
@@ -190,18 +190,18 @@ namespace TweakScale
     public static class ConvertEx
     {
         /// <summary>
-        /// Returns an object of tyep <typeparamref name="T"/> and whose exponentValue is equivalent to <paramref name="value"/>.
+        /// Returns an object of tyep <typeparamref name="TTo"/> and whose exponentValue is equivalent to <paramref name="value"/>.
         /// </summary>
-        /// <typeparam name="T">The type of object to return.</typeparam>
-        /// <typeparam name="TU">The type of the object to convert.</typeparam>
+        /// <typeparam name="TTo">The type of object to return.</typeparam>
+        /// <typeparam name="TFrom">The type of the object to convert.</typeparam>
         /// <param name="value">The object to convert.</param>
-        /// <returns>An object whose type is <typeparamref name="T"/> and whose exponentValue is equivalent to <paramref name="value"/>. -or- A null reference (Nothing in Visual Basic), if <paramref name="value"/> is null and <typeparamref name="T"/> is not destination exponentValue type.</returns>
-        /// <exception cref="System.InvalidCastException">This conversion is not supported. -or-<paramref name="value"/> is null and <typeparamref name="T"/> is destination exponentValue type.</exception>
-        /// <exception cref="System.FormatException"><paramref name="value"/> is not in destination format recognized by <typeparamref name="T"/>.</exception>
-        /// <exception cref="System.OverflowException"><paramref name="value"/> represents destination number that is out of the range of <typeparamref name="T"/>.</exception>
-        public static T ChangeType<T, TU>(TU value) where TU : IConvertible
+        /// <returns>An object whose type is <typeparamref name="TTo"/> and whose exponentValue is equivalent to <paramref name="value"/>. -or- A null reference (Nothing in Visual Basic), if <paramref name="value"/> is null and <typeparamref name="TTo"/> is not destination exponentValue type.</returns>
+        /// <exception cref="System.InvalidCastException">This conversion is not supported. -or-<paramref name="value"/> is null and <typeparamref name="TTo"/> is destination exponentValue type.</exception>
+        /// <exception cref="System.FormatException"><paramref name="value"/> is not in destination format recognized by <typeparamref name="TTo"/>.</exception>
+        /// <exception cref="System.OverflowException"><paramref name="value"/> represents destination number that is out of the range of <typeparamref name="TTo"/>.</exception>
+        public static TTo ChangeType<TTo, TFrom>(TFrom value) where TFrom : IConvertible
         {
-            return (T)Convert.ChangeType(value, typeof(T));
+            return (TTo)Convert.ChangeType(value, typeof(TTo));
         }
 
         /// <summary>
