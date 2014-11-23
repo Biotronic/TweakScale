@@ -31,13 +31,17 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Checker.cs" />
+    <Compile Include="Enums.cs" />
     <Compile Include="ExtensionMethods.cs" />
+    <Compile Include="Hotkey.cs" />
+    <Compile Include="HotkeyAble.cs" />
     <Compile Include="MemberUpdater.cs" />
+    <Compile Include="OSD.cs" />
     <Compile Include="ScaleExponents.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Scale.cs" />
-    <Compile Include="ScaleConfig.cs" />
+    <Compile Include="ScaleType.cs" />
     <Compile Include="Tuple.cs" />
     <Compile Include="Updater.cs" />
   </ItemGroup>

@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace TweakScale
 {
-    public static class ExtensionMethods
+    public static partial class ExtensionMethods
     {
         /// <summary>
         /// Enumerates two IEnumerables in lockstep.

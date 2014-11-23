@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace TweakScale
@@ -50,35 +51,35 @@ namespace TweakScale
     /// <summary>
     /// Configuration values for TweakScale.
     /// </summary>
-    public class ScaleConfig
+    public class ScaleType
     {
         /// <summary>
-        /// Fetches the scale config with the specified name.
+        /// Fetches the scale ScaleType with the specified name.
         /// </summary>
-        /// <param name="name">The name of the config to fetch.</param>
-        /// <returns>The specified config or the default config if none exists by that name.</returns>
-        private static ScaleConfig GetScaleConfig(string name)
+        /// <param name="name">The name of the ScaleType to fetch.</param>
+        /// <returns>The specified ScaleType or the default ScaleType if none exists by that name.</returns>
+        private static ScaleType GetScaleConfig(string name)
         {
             var config = GameDatabase.Instance.GetConfigs("SCALETYPE").FirstOrDefault(a => a.name == name);
             if (config == null && name != "default")
             {
                 Tools.LogWf("No SCALETYPE with name {0}", name);
             }
-            return (object)config == null ? DefaultConfig : new ScaleConfig(config.config);
+            return (object)config == null ? DefaultScaleType : new ScaleType(config.config);
         }
 
-        private static ScaleConfig[] _configs;
-        public static ScaleConfig[] AllConfigs
+        private static ScaleType[] _scaleTypes;
+        public static ScaleType[] AllScaleTypes
         {
             get {
-                return _configs = _configs ??
+                return _scaleTypes = _scaleTypes ??
                         (GameDatabase.Instance.GetConfigs("SCALETYPE")
-                            .Select(a => new ScaleConfig(a.config))
+                            .Select(a => new ScaleType(a.config))
                             .ToArray());
             }
         }
 
-        private static readonly ScaleConfig DefaultConfig = new ScaleConfig();
+        private static readonly ScaleType DefaultScaleType = new ScaleType();
 
         private readonly float[] _scaleFactors = { 0.625f, 1.25f, 2.5f, 3.75f, 5f };
         private readonly string[] _scaleNames = { "62.5cm", "1.25m", "2.5m", "3.75m", "5m" };
@@ -86,6 +87,7 @@ namespace TweakScale
 
         public readonly bool IsFreeScale = false;
         public readonly string[] TechRequired = { "", "", "", "", "" };
+        public readonly Dictionary<string, float> AttachNodes = new Dictionary<string, float>();
         public readonly float MinValue = 0.625f;
         public readonly float MaxValue = 5.0f;
         public readonly float DefaultScale = 1.25f;
@@ -120,12 +122,12 @@ namespace TweakScale
 
         public int[] ScaleNodes { get; private set; }
 
-        private ScaleConfig()
+        private ScaleType()
         {
             ScaleNodes = new int[] {};
         }
 
-        public ScaleConfig(ConfigNode config)
+        public ScaleType(ConfigNode config)
         {
             ScaleNodes = new int[] {};
             if ((object)config == null || Tools.ConfigValue(config, "name", "default") == "default")
@@ -145,6 +147,7 @@ namespace TweakScale
             _scaleNames   = Tools.ConfigValue(config, "scaleNames",   source._scaleNames).Select(a => a.Trim()).ToArray();
             TechRequired  = Tools.ConfigValue(config, "techRequired", source.TechRequired).Select(a=>a.Trim()).ToArray();
             Name          = Tools.ConfigValue(config, "name",         "unnamed scaletype");
+            AttachNodes   = GetNodeFactors(config.GetNode("ATTACHNODES"));
             if (Name == "TweakScale")
             {
                 Name = source.Name;
@@ -170,9 +173,21 @@ namespace TweakScale
             Exponents = ScaleExponents.CreateExponentsForModule(config, source.Exponents);
         }
 
+        private static Dictionary<string, float> GetNodeFactors(ConfigNode node)
+        {
+            var result = node.values.Cast<ConfigNode.Value>().ToDictionary(a => a.name, a => float.Parse(a.value));
+
+            if (!result.ContainsKey("base"))
+            {
+                result["base"] = 1.0f;
+            }
+
+            return result;
+        }
+
         public override string ToString()
         {
-            var result = "ScaleConfig {\n";
+            var result = "ScaleType {\n";
             result += "	isFreeScale = " + IsFreeScale + "\n";
             result += "	scaleFactors = " + ScaleFactors + "\n";
             result += " scaleNodes = " + ScaleNodes + "\n";
@@ -185,10 +200,10 @@ namespace TweakScale
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj.GetType() == GetType() && Equals((ScaleConfig) obj);
+            return obj.GetType() == GetType() && Equals((ScaleType) obj);
         }
 
-        public static bool operator ==(ScaleConfig a, ScaleConfig b)
+        public static bool operator ==(ScaleType a, ScaleType b)
         {
             if ((object)a == null)
                 return (object)b == null;
@@ -197,12 +212,12 @@ namespace TweakScale
             return a.Name == b.Name;
         }
 
-        public static bool operator !=(ScaleConfig a, ScaleConfig b)
+        public static bool operator !=(ScaleType a, ScaleType b)
         {
             return !(a == b);
         }
 
-        protected bool Equals(ScaleConfig other)
+        protected bool Equals(ScaleType other)
         {
             return string.Equals(Name, other.Name);
         }

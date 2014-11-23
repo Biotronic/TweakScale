@@ -30,6 +30,7 @@ namespace TweakScale
         /// </summary>
         [KSPField(isPersistant = true, guiActiveEditor = true, guiName = "Scale", guiFormat = "S4", guiUnits = "m")]
         [UI_FloatEdit(scene = UI_Scene.Editor, minValue = 0.625f, maxValue = 5, incrementLarge = 1.25f, incrementSmall = 0.125f, incrementSlide = 0.001f)]
+// ReSharper disable once InconsistentNaming
         public float tweakScale = 1;
 
         /// <summary>
@@ -37,30 +38,35 @@ namespace TweakScale
         /// </summary>
         [KSPField(isPersistant = false, guiActiveEditor = true, guiName = "Scale")]
         [UI_ChooseOption(scene = UI_Scene.Editor)]
+// ReSharper disable once InconsistentNaming
         public int tweakName = 0;
 
         /// <summary>
         /// The scale to which the part currently is scaled.
         /// </summary>
         [KSPField(isPersistant = true)]
+// ReSharper disable once InconsistentNaming
         public float currentScale = -1;
 
         /// <summary>
         /// The default scale, i.e. the number by which to divide tweakScale and currentScale to get the relative size difference from when the part is used without TweakScale.
         /// </summary>
         [KSPField(isPersistant = true)]
+// ReSharper disable once InconsistentNaming
         public float defaultScale = -1;
 
         /// <summary>
         /// Whether the part should be freely scalable or limited to destination list of allowed values.
         /// </summary>
         [KSPField(isPersistant = true)]
+// ReSharper disable once InconsistentNaming
         public bool isFreeScale = false;
 
         /// <summary>
         /// The version of TweakScale last used to change this part. Intended for use in the case of non-backward-compatible changes.
         /// </summary>
         [KSPField(isPersistant = true)]
+// ReSharper disable once InconsistentNaming
         public string version;
 
         /// <summary>
@@ -87,6 +93,7 @@ namespace TweakScale
         /// The exponentValue by which the part is scaled by default. When destination part uses MODEL { scale = ... }, this will be different from (1,1,1).
         /// </summary>
         [KSPField(isPersistant = true)]
+// ReSharper disable once InconsistentNaming
         public Vector3 defaultTransformScale = new Vector3(0f, 0f, 0f);
 
 
@@ -113,15 +120,18 @@ namespace TweakScale
         private Tristate _duplicate = Tristate.Unset;
 
         /// <summary>
-        /// The Config for this part.
+        /// The ScaleType for this part.
         /// </summary>
-        public ScaleConfig Config { get; private set; }
+        public ScaleType ScaleType { get; private set; }
 
         /// <summary>
         /// Cost of unscaled, empty part.
         /// </summary>
         [KSPField(isPersistant = true)]
         public float DryCost;
+
+        private readonly Hotkeyable _chainingEnabled = new Hotkeyable("ScaleChaining", "LeftShift", "", true);
+        private readonly Hotkeyable _autoscaleEnabled = new Hotkeyable("AutoScale", "LeftShift", "", true);
 
         /// <summary>
         /// The ConfigNode that belongs to the part this modules affects.
@@ -186,40 +196,40 @@ namespace TweakScale
         }
 
         /// <summary>
-        /// Loads settings from <paramref name="config"/>.
+        /// Loads settings from <paramref name="scaleType"/>.
         /// </summary>
-        /// <param name="config">The settings to use.</param>
-        private void SetupFromConfig(ScaleConfig config)
+        /// <param name="scaleType">The settings to use.</param>
+        private void SetupFromConfig(ScaleType scaleType)
         {
-            isFreeScale = config.IsFreeScale;
-            defaultScale = config.DefaultScale;
+            isFreeScale = scaleType.IsFreeScale;
+            defaultScale = scaleType.DefaultScale;
             Fields["tweakScale"].guiActiveEditor = false;
             Fields["tweakName"].guiActiveEditor = false;
             if (isFreeScale)
             {
                 Fields["tweakScale"].guiActiveEditor = true;
                 var range = (UI_FloatEdit)Fields["tweakScale"].uiControlEditor;
-                range.minValue = config.MinValue;
-                range.maxValue = config.MaxValue;
+                range.minValue = scaleType.MinValue;
+                range.maxValue = scaleType.MaxValue;
                 range.incrementLarge = (float)Math.Round((range.maxValue - range.minValue) / 10, 2);
                 range.incrementSmall = (float)Math.Round(range.incrementLarge / 10, 2);
-                Fields["tweakScale"].guiUnits = config.Suffix;
+                Fields["tweakScale"].guiUnits = scaleType.Suffix;
             }
             else
             {
-                Fields["tweakName"].guiActiveEditor = config.ScaleFactors.Length > 1;
+                Fields["tweakName"].guiActiveEditor = scaleType.ScaleFactors.Length > 1;
                 var options = (UI_ChooseOption)Fields["tweakName"].uiControlEditor;
 
                 if (ScaleFactors.Length <= 0)
                     return;
-                ScaleFactors = config.ScaleFactors;
-                ScaleNodes = config.ScaleNodes;
-                options.options = config.ScaleNames;
+                ScaleFactors = scaleType.ScaleFactors;
+                ScaleNodes = scaleType.ScaleNodes;
+                options.options = scaleType.ScaleNames;
             }
         }
 
         /// <summary>
-        /// Sets up values from config, creates updaters, and sets up initial values.
+        /// Sets up values from ScaleType, creates updaters, and sets up initial values.
         /// </summary>
         protected virtual void Setup()
         {
@@ -237,7 +247,7 @@ namespace TweakScale
 
             _updaters = TweakScaleUpdater.CreateUpdaters(part).ToArray();
 
-            SetupFromConfig(Config = new ScaleConfig(ModuleNode));
+            SetupFromConfig(ScaleType = new ScaleType(ModuleNode));
 
 
             var doUpdate = currentScale < 0f;
@@ -330,7 +340,7 @@ namespace TweakScale
             	}
             	else
             	{
-                    node.size = (int)(baseNode.size + (Tools.ClosestIndex(tweakScale, Config.AllScaleFactors) - Tools.ClosestIndex(defaultScale, Config.AllScaleFactors)) / (float)Config.AllScaleFactors.Length * 5);
+                    node.size = (int)(baseNode.size + (Tools.ClosestIndex(tweakScale, ScaleType.AllScaleFactors) - Tools.ClosestIndex(defaultScale, ScaleType.AllScaleFactors)) / (float)ScaleType.AllScaleFactors.Length * 5);
                 }
             }
             if (node.size < 0)
@@ -410,41 +420,87 @@ namespace TweakScale
         {
             if (isFreeScale || !HasResources)
                 return;
-            foreach (UIPartActionWindow win in FindObjectsOfType(typeof(UIPartActionWindow)))
+            foreach (var win in FindObjectsOfType<UIPartActionWindow>().Where(win => win.part == part))
             {
-                if (win.part == part)
-                {
-                    // This causes the slider to be non-responsive - i.e. after you click once, you must click again, not drag the slider.
-                    win.displayDirty = true;
-                }
+                // This causes the slider to be non-responsive - i.e. after you click once, you must click again, not drag the slider.
+                win.displayDirty = true;
             }
         }
 
-        void OnTweakScaleChanged()
+        private static TweakScale GetTweakScale(Part other)
+        {
+            return other.FirstModule<TweakScale>();
+        }
+
+        private bool IsChainScalable(Part other)
+        {
+            var ts = other.FirstModule<TweakScale>();
+            if (ts == null)
+                return false;
+
+            var node = other.findAttachNodeByPart(part);
+
+            if (node.nodeType != AttachNode.NodeType.Surface)
+                return false;
+
+
+
+            return true;
+        }
+
+        private static Tuple<AttachNode, AttachNode> NodesBetween(Part a, Part b)
+        {
+            var nodeA = a.findAttachNodeByPart(b);
+            var nodeB = b.findAttachNodeByPart(a);
+            return Tuple.Create(nodeA, nodeB);
+        }
+
+        private float? GetScaleFactor(AttachNode nodeA, AttachNode nodeB, TweakScale other)
+        {
+            if (!this.ScaleType.AttachNodes.ContainsKey(nodeA.id))
+                return null;
+            if (!other.ScaleType.AttachNodes.ContainsKey(nodeB.id))
+                return null;
+            var baseA = this.ScaleType.AttachNodes["base"];
+            var baseB = other.ScaleType.AttachNodes["base"];
+            var scaleA = this.ScaleType.AttachNodes[nodeA.id];
+            var scaleB = other.ScaleType.AttachNodes[nodeB.id];
+            return (scaleA*scaleB)/(baseA*baseB);
+        }
+
+        private void ChainScale()
+        {
+            foreach (var child in part.children)
+            {
+                var nodes = NodesBetween(part, child);
+                if (nodes.Item1 == null || nodes.Item2 == null)
+                    continue;
+                var ts = child.FirstModule<TweakScale>();
+
+                var tmp = GetScaleFactor(nodes.Item1, nodes.Item2, ts);
+                if (!tmp.HasValue)
+                    continue;
+                var factor = tmp.Value;
+
+                ts.tweakScale = tweakScale * factor;
+                if (ts.ScaleFactors.Length > 0)
+                {
+                    ts.tweakName = Tools.ClosestIndex(ts.tweakScale, ts.ScaleFactors);
+                }
+                ts.OnTweakScaleChanged();
+            }
+        }
+
+        private void OnTweakScaleChanged()
         {
             if (!isFreeScale)
             {
                 tweakScale = ScaleFactors[tweakName];
             }
 
-            if (!Input.GetKey(KeyCode.LeftShift))
+            if (_chainingEnabled)
             {
-                foreach (var child in part.children)
-                {
-                    var ts = child.Modules.OfType<TweakScale>().FirstOrDefault();
-                    if ((object)ts == null)
-                        continue;
-                    if (ts.Config != Config)
-                        continue;
-                    if (ts.tweakScale != currentScale)
-                        continue;
-                    ts.tweakScale = tweakScale;
-                    if (!isFreeScale)
-                    {
-                        ts.tweakName = tweakName;
-                    }
-                    ts.OnTweakScaleChanged();
-                }
+                ChainScale();
             }
 
             UpdateByWidth(true);
@@ -457,15 +513,25 @@ namespace TweakScale
             currentScale = tweakScale;
         }
 
+        private void AutoScale()
+        {
+            var ts = GetTweakScale(part.parent);
+            if ((object)ts == null)
+                return;
+            if (ts.ScaleType != ScaleType)
+                return;
+            tweakName = ts.tweakName;
+            tweakScale = ts.tweakScale;
+        }
+
         private bool CheckForDuplicateTweakScale()
         {
             if (_duplicate == Tristate.False)
                 return false;
             if (_duplicate == Tristate.True)
-            {
                 return true;
-            }
-            if (this != part.Modules.OfType<TweakScale>().First())
+
+            if (this != part.FirstModule<TweakScale>())
             {
                 Tools.LogWf("Duplicate TweakScale module on part [{0}] {1}", part.partInfo.name, part.partInfo.title);
                 Fields["tweakScale"].guiActiveEditor = false;
@@ -477,7 +543,7 @@ namespace TweakScale
             return false;
         }
 
-        bool CheckForInvalidCfg()
+        private bool CheckForInvalidCfg()
         {
             if (ScaleFactors.Length != 0) 
                 return false;
@@ -496,13 +562,11 @@ namespace TweakScale
                 return;
             }
 
-            if (_firstUpdateWithParent && (object)part.parent != null)
+            if (_firstUpdateWithParent && part.HasParent())
             {
-                var ts = part.parent.Modules.OfType<TweakScale>().FirstOrDefault();
-                if ((object)ts != null && ts.Config == Config)
+                if (_autoscaleEnabled)
                 {
-                    tweakName = ts.tweakName;
-                    tweakScale = ts.tweakScale;
+                    AutoScale();
                 }
                 _firstUpdateWithParent = false;
             }

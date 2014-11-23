@@ -115,7 +115,7 @@ namespace TweakScale
         /// Reads destination exponentValue from the ConfigNode and magically converts it to the type you ask. Tested for float, boolean and double[]. Anything else is at your own risk.
         /// </summary>
         /// <typeparam name="T">The type to convert to. Usually inferred from <paramref name="defaultValue"/>.</typeparam>
-        /// <param name="config">Config node from which to read values.</param>
+        /// <param name="config">ScaleType node from which to read values.</param>
         /// <param name="name">Name of the ConfigNode's field.</param>
         /// <param name="defaultValue">The exponentValue to use when the ConfigNode doesn't contain what we want.</param>
         /// <returns>The exponentValue in the ConfigNode, or <paramref name="defaultValue"/> if no decent exponentValue is found there.</returns>
@@ -204,6 +204,16 @@ namespace TweakScale
                     yield return type;
                 }
             }
+        }
+
+        public static T FirstModule<T>(this Part part) where T : PartModule
+        {
+            return part.Modules.OfType<T>().FirstOrDefault();
+        }
+
+        public static bool HasParent(this Part p)
+        {
+            return (object) p.parent != null;
         }
     }
 }

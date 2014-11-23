@@ -126,7 +126,7 @@ namespace TweakScale
 
         public void OnRescale(ScalingFactor factor)
         {
-            ScaleExponents.UpdateObject(_part, _basePart, _ts.Config.Exponents, factor);
+            ScaleExponents.UpdateObject(_part, _basePart, _ts.ScaleType.Exponents, factor);
         }
     }
 
