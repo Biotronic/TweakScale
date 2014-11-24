@@ -99,9 +99,11 @@ namespace TweakScale
 
         private static IRescalable CreateUpdater(PartModule module)
         {
-            if (module is IRescalable)
+// ReSharper disable once SuspiciousTypeConversion.Global
+            var updater = module as IRescalable;
+            if (updater != null)
             {
-                return module as IRescalable;
+                return updater;
             }
             return Ctors.ContainsKey(module.GetType()) ? Ctors[module.GetType()](module) : null;
         }

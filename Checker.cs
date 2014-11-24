@@ -1,4 +1,5 @@
 ﻿
+// ReSharper disable PossibleNullReferenceException
 /**
  * Copyright (c) 2014, Majiir
  * All rights reserved.
@@ -223,3 +224,4 @@ namespace TweakScale
         }
     }
 }
+// ReSharper restore PossibleNullReferenceException

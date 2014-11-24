@@ -273,9 +273,10 @@ namespace TweakScale
             if (ShouldIgnore(part))
                 return;
 
-            if (obj is IEnumerable)
+            var enumerable = obj as IEnumerable;
+            if (enumerable != null)
             {
-                UpdateEnumerable((IEnumerable)obj, (IEnumerable)baseObj, factor, part);
+                UpdateEnumerable(enumerable, (IEnumerable)baseObj, factor, part);
                 return;
             }
 
@@ -311,13 +312,15 @@ namespace TweakScale
         /// <param name="part">The part the object is on.</param>
         private void UpdateEnumerable(IEnumerable obj, IEnumerable prefabObj, ScalingFactor factor, Part part = null)
         {
-            var other = prefabObj;
-            if (prefabObj == null || obj.StupidCount() != prefabObj.StupidCount())
+            var prefabObjects = prefabObj as object[] ?? prefabObj.Cast<object>().ToArray();
+            var urrentObjects = obj as object[] ?? obj.Cast<object>().ToArray();
+            
+            if (prefabObj == null || urrentObjects.Length != prefabObjects.Length)
             {
-                other = ((object)null).Repeat().Take(obj.StupidCount());
+                prefabObjects = ((object)null).Repeat().Take(urrentObjects.Length).ToArray();
             }
 
-            foreach (var item in obj.Zip(other, ModuleAndPrefab.Create))
+            foreach (var item in urrentObjects.Zip(prefabObjects, ModuleAndPrefab.Create))
             {
                 if (!string.IsNullOrEmpty(_name) && _name != "*") // Operate on specific elements, not all.
                 {

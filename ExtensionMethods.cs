@@ -130,6 +130,7 @@ namespace TweakScale
             {
                 yield return a;
             }
+// ReSharper disable once FunctionNeverReturns
         }
 
         /// <summary>
@@ -184,6 +185,34 @@ namespace TweakScale
                 result.Add(item);
             }
             return result;
+        }
+
+        public static T Match<T, TNullable>(this TNullable? value, Func<TNullable, T> hasValue, Func<T> noValue) where TNullable : struct
+        {
+            if (value.HasValue)
+                return hasValue(value.Value);
+            return noValue();
+        }
+
+        public static void Match<TNullable>(this TNullable? value, Action<TNullable> hasValue, Action noValue) where TNullable : struct
+        {
+            if (value.HasValue)
+                hasValue(value.Value);
+            else
+                noValue();
+        }
+
+        public static void Match<TNullable>(this TNullable? value, Action<TNullable> hasValue) where TNullable : struct
+        {
+            if (value.HasValue)
+                hasValue(value.Value);
+        }
+
+        public static T? Match<T, TNullable>(this TNullable? value, Func<TNullable, T> hasValue) where TNullable : struct where T : struct
+        {
+            if (value.HasValue)
+                return hasValue(value.Value);
+            return null;
         }
     }
 

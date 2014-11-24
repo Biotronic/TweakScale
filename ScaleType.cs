@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace TweakScale
@@ -68,6 +67,29 @@ namespace TweakScale
             return (object)config == null ? DefaultScaleType : new ScaleType(config.config);
         }
 
+        public struct NodeInfo
+        {
+            public readonly string Family;
+            public readonly float Scale;
+
+            public NodeInfo(string family, float scale) : this()
+            {
+                Family = family;
+                Scale = scale;
+            }
+
+            public NodeInfo(string s) : this()
+            {
+                var parts = s.Split(',');
+                if (parts.Length != 2 || !float.TryParse(parts[1], out Scale))
+                {
+                    Tools.LogWf("Invalid attachment node string \"{0}\"");
+                    return;
+                }
+                Family = parts[0];
+            }
+        }
+
         private static ScaleType[] _scaleTypes;
         public static ScaleType[] AllScaleTypes
         {
@@ -87,12 +109,13 @@ namespace TweakScale
 
         public readonly bool IsFreeScale = false;
         public readonly string[] TechRequired = { "", "", "", "", "" };
-        public readonly Dictionary<string, float> AttachNodes = new Dictionary<string, float>();
+        public readonly Dictionary<string, NodeInfo> AttachNodes = new Dictionary<string, NodeInfo>();
         public readonly float MinValue = 0.625f;
         public readonly float MaxValue = 5.0f;
         public readonly float DefaultScale = 1.25f;
         public readonly string Suffix = "m";
         public readonly string Name;
+        public readonly string Family;
 
         public float[] AllScaleFactors
         {
@@ -147,6 +170,7 @@ namespace TweakScale
             _scaleNames   = Tools.ConfigValue(config, "scaleNames",   source._scaleNames).Select(a => a.Trim()).ToArray();
             TechRequired  = Tools.ConfigValue(config, "techRequired", source.TechRequired).Select(a=>a.Trim()).ToArray();
             Name          = Tools.ConfigValue(config, "name",         "unnamed scaletype");
+            Family        = Tools.ConfigValue(config, "family",       "default");
             AttachNodes   = GetNodeFactors(config.GetNode("ATTACHNODES"));
             if (Name == "TweakScale")
             {
@@ -173,13 +197,13 @@ namespace TweakScale
             Exponents = ScaleExponents.CreateExponentsForModule(config, source.Exponents);
         }
 
-        private static Dictionary<string, float> GetNodeFactors(ConfigNode node)
+        private Dictionary<string, NodeInfo> GetNodeFactors(ConfigNode node)
         {
-            var result = node.values.Cast<ConfigNode.Value>().ToDictionary(a => a.name, a => float.Parse(a.value));
+            var result = node.values.Cast<ConfigNode.Value>().ToDictionary(a => a.name, a => new NodeInfo(a.value));
 
             if (!result.ContainsKey("base"))
             {
-                result["base"] = 1.0f;
+                result["base"] = new NodeInfo(Family, 1.0f);
             }
 
             return result;

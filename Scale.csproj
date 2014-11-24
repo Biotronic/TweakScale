@@ -34,7 +34,7 @@
     <Compile Include="Enums.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Hotkey.cs" />
-    <Compile Include="HotkeyAble.cs" />
+    <Compile Include="Hotkeyable.cs" />
     <Compile Include="MemberUpdater.cs" />
     <Compile Include="OSD.cs" />
     <Compile Include="ScaleExponents.cs" />
