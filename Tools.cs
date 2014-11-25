@@ -206,11 +206,6 @@ namespace TweakScale
             }
         }
 
-        public static T FirstModule<T>(this Part part) where T : PartModule
-        {
-            return part.Modules.OfType<T>().FirstOrDefault();
-        }
-
         public static bool HasParent(this Part p)
         {
             return (object) p.parent != null;

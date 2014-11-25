@@ -17,7 +17,7 @@ namespace TweakScale
         }
     }
 
-    public class Tuple<T1, T2> : IComparable
+    public struct Tuple<T1, T2> : IComparable
     {
         public T1 Item1
         {
@@ -32,6 +32,7 @@ namespace TweakScale
         }
 
         public Tuple(T1 a, T2 b)
+            : this()
         {
             Item1 = a;
             Item2 = b;
@@ -44,15 +45,11 @@ namespace TweakScale
 
         public bool Equals(object obj, IEqualityComparer cmp)
         {
-            if (obj == null)
+            if (!(obj is Tuple<T1, T2>))
             {
                 return false;
             }
-            var other = obj as Tuple<T1, T2>;
-            if (other == null)
-            {
-                return false;
-            }
+            var other = (Tuple<T1, T2>)obj;
             return cmp.Equals(Item1, other.Item1) && cmp.Equals(Item2, other.Item2);
         }
 
@@ -77,11 +74,7 @@ namespace TweakScale
             {
                 return 1;
             }
-            var other = obj as Tuple<T1, T2>;
-            if (other == null)
-            {
-                throw new ArgumentException("Invalid comparison: " + GetType().FullName + " vs " + obj.GetType().FullName);
-            }
+            var other = (Tuple<T1, T2>)obj;
             var result = cmp.Compare(Item1, other.Item1);
             if (result != 0)
             {

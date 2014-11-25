@@ -67,26 +67,54 @@ namespace TweakScale
             return (object)config == null ? DefaultScaleType : new ScaleType(config.config);
         }
 
-        public struct NodeInfo
+        public class NodeInfo
         {
             public readonly string Family;
             public readonly float Scale;
 
+            private NodeInfo()
+            {
+            }
+
             public NodeInfo(string family, float scale) : this()
             {
+
                 Family = family;
                 Scale = scale;
+                if (Mathf.Abs(Scale) < 0.01)
+                {
+                    Tools.LogWf("Invalid scale for family {0}: {1}", family, scale);
+                }
             }
 
             public NodeInfo(string s) : this()
             {
-                var parts = s.Split(',');
-                if (parts.Length != 2 || !float.TryParse(parts[1], out Scale))
+                var parts = s.Split(':');
+                if (parts.Length == 1)
                 {
-                    Tools.LogWf("Invalid attachment node string \"{0}\"");
+                    if (!float.TryParse(parts[0], out Scale))
+                        Tools.LogWf("Invalid attachment node string \"{0}\"", s);
+                    return;
+                }
+                if (parts.Length == 0)
+                {
+                    return;
+                }
+                if (!float.TryParse(parts[1], out Scale))
+                {
+                    Tools.LogWf("Invalid attachment node string \"{0}\"", s);
                     return;
                 }
                 Family = parts[0];
+                if (Mathf.Abs(Scale) < 0.01)
+                {
+                    Tools.LogWf("Invalid scale for family {0}: {1}", Family, Scale);
+                }
+            }
+
+            public override string ToString()
+            {
+                return string.Format("({0}, {1})", Family, Scale);
             }
         }
 
@@ -116,6 +144,9 @@ namespace TweakScale
         public readonly string Suffix = "m";
         public readonly string Name;
         public readonly string Family;
+        public float BaseScale {
+            get { return AttachNodes["base"].Scale; }
+        }
 
         public float[] AllScaleFactors
         {
@@ -148,6 +179,8 @@ namespace TweakScale
         private ScaleType()
         {
             ScaleNodes = new int[] {};
+            AttachNodes = new Dictionary<string, NodeInfo>();
+            AttachNodes["base"] = new NodeInfo("", 1);
         }
 
         public ScaleType(ConfigNode config)
@@ -171,7 +204,7 @@ namespace TweakScale
             TechRequired  = Tools.ConfigValue(config, "techRequired", source.TechRequired).Select(a=>a.Trim()).ToArray();
             Name          = Tools.ConfigValue(config, "name",         "unnamed scaletype");
             Family        = Tools.ConfigValue(config, "family",       "default");
-            AttachNodes   = GetNodeFactors(config.GetNode("ATTACHNODES"));
+            AttachNodes   = GetNodeFactors(config.GetNode("ATTACHNODES"), source.AttachNodes);
             if (Name == "TweakScale")
             {
                 Name = source.Name;
@@ -197,9 +230,17 @@ namespace TweakScale
             Exponents = ScaleExponents.CreateExponentsForModule(config, source.Exponents);
         }
 
-        private Dictionary<string, NodeInfo> GetNodeFactors(ConfigNode node)
+        private Dictionary<string, NodeInfo> GetNodeFactors(ConfigNode node, Dictionary<string, NodeInfo> source)
         {
-            var result = node.values.Cast<ConfigNode.Value>().ToDictionary(a => a.name, a => new NodeInfo(a.value));
+            var result = source.Clone();
+
+            if (node != null)
+            {
+                foreach (var v in node.values.Cast<ConfigNode.Value>())
+                {
+                    result[v.name] = new NodeInfo(v.value);
+                }
+            }
 
             if (!result.ContainsKey("base"))
             {

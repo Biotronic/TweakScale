@@ -1,6 +1,9 @@
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using KSPAPIExtensions;
 using System;
 using System.Linq;
+using TweakScale.Annotations;
 using UnityEngine;
 
 namespace TweakScale
@@ -130,8 +133,8 @@ namespace TweakScale
         [KSPField(isPersistant = true)]
         public float DryCost;
 
-        private readonly Hotkeyable _chainingEnabled = new Hotkeyable("ScaleChaining", new[] { KeyCode.LeftShift }, new[] { KeyCode.LeftControl, KeyCode.K }, true);
-        private readonly Hotkeyable _autoscaleEnabled = new Hotkeyable("AutoScale", new[] { KeyCode.LeftShift }, new[] { KeyCode.LeftControl, KeyCode.L }, true);
+        private Hotkeyable _chainingEnabled;
+        private Hotkeyable _autoscaleEnabled;
 
         /// <summary>
         /// The ConfigNode that belongs to the part this modules affects.
@@ -287,6 +290,9 @@ namespace TweakScale
                 _firstUpdateWithParent = false;
             }
             Setup();
+
+            _autoscaleEnabled = HotkeyManager.Instance.AddHotkey("Autoscale", new[] { KeyCode.LeftShift }, new[] { KeyCode.LeftControl, KeyCode.L }, true);
+            _chainingEnabled = HotkeyManager.Instance.AddHotkey("Scale chaining", new[] { KeyCode.LeftShift }, new[] { KeyCode.LeftControl, KeyCode.K }, true);
         }
 
         public override void OnLoad(ConfigNode node)
@@ -355,7 +361,6 @@ namespace TweakScale
         /// <param name="moveParts">Whether or not to move attached parts.</param>
         private void UpdateByWidth(bool moveParts)
         {
-// ReSharper disable once CompareOfFloatsByEqualityOperator
             if (defaultTransformScale.x == 0.0f)
             {
                 defaultTransformScale = part.transform.GetChild(0).localScale;
@@ -428,65 +433,96 @@ namespace TweakScale
             }
         }
 
-        private static TweakScale GetTweakScale(Part other)
-        {
-            return other.FirstModule<TweakScale>();
-        }
-
-        private static Tuple<AttachNode, AttachNode> NodesBetween(Part a, Part b)
+        /// <summary>
+        /// Find the Attachnode that fastens <paramref name="a"/> to <paramref name="b"/> and vice versa.
+        /// </summary>
+        /// <param name="a">The source part (often the parent)</param>
+        /// <param name="b">The target part (often the child)</param>
+        /// <returns>The AttachNodes between the two parts.</returns>
+        private static Tuple<AttachNode, AttachNode>? NodesBetween(Part a, Part b)
         {
             var nodeA = a.findAttachNodeByPart(b);
             var nodeB = b.findAttachNodeByPart(a);
+
+            if (nodeA == null || nodeB == null)
+                return null;
             
             return Tuple.Create(nodeA, nodeB);
         }
 
-        private float? GetScaleFactor(AttachNode nodeA, AttachNode nodeB, TweakScale other)
+        /// <summary>
+        /// Calculate the correct scale to use for scaling a part relative to another.
+        /// </summary>
+        /// <param name="a">Source part, from which we get the desired scale.</param>
+        /// <param name="b">Target part, which will potentially be scaled.</param>
+        /// <returns>The difference in scale between <paramref name="a"/> and <paramref name="b"/>, or null if the parts are incompatible.</returns>
+        private static float? GetRelativeScaling(TweakScale a, TweakScale b)
         {
-            if (!ScaleType.AttachNodes.ContainsKey(nodeA.id))
+            var nodes = NodesBetween(a.part, b.part);
+            if (!nodes.HasValue)
                 return null;
-            if (!other.ScaleType.AttachNodes.ContainsKey(nodeB.id))
+            var nodeA = nodes.Value.Item1;
+            var nodeB = nodes.Value.Item2;
+
+            if (!a.ScaleType.AttachNodes.ContainsKey(nodeA.id) ||
+                !b.ScaleType.AttachNodes.ContainsKey(nodeB.id))
                 return null;
 
-            var scaleA = ScaleType.AttachNodes[nodeA.id];
-            var scaleB = other.ScaleType.AttachNodes[nodeB.id];
-            var baseA = ScaleType.AttachNodes["base"];
-            var baseB = other.ScaleType.AttachNodes["base"];
+            var scaleA = a.ScaleType.AttachNodes[nodeA.id];
+            var scaleB = b.ScaleType.AttachNodes[nodeB.id];
+            var baseA = a.ScaleType.BaseScale;
+            var baseB = b.ScaleType.BaseScale;
 
             if (scaleA.Family != scaleB.Family)
                 return null;
 
-            if (baseA.Family != baseB.Family)
-                return null;
-
-            return (scaleA.Scale*scaleB.Scale)/(baseA.Scale*baseB.Scale);
+            return (scaleA.Scale * scaleB.Scale) / (baseA * baseB);
         }
 
+        /// <summary>
+        /// Automatically scale part to match other part, if applicable.
+        /// </summary>
+        /// <param name="a">Source part, from which we get the desired scale.</param>
+        /// <param name="b">Target part, which will potentially be scaled.</param>
+        private static void AutoScale(TweakScale a, TweakScale b)
+        {
+            if (a == null || b == null)
+                return;
+
+            var factor = GetRelativeScaling(a,b);
+            if (!factor.HasValue)
+                return;
+
+            b.tweakScale = a.tweakScale * factor.Value;
+            if (a.ScaleFactors.Length > 0)
+            {
+                b.tweakName = Tools.ClosestIndex(b.tweakScale, b.ScaleFactors);
+            }
+            b.OnTweakScaleChanged();
+        }
+
+        /// <summary>
+        /// Scale children with the part.
+        /// </summary>
         private void ChainScale()
         {
             foreach (var child in part.children)
             {
-                var nodes = NodesBetween(part, child);
-                if (nodes.Item1 == null || nodes.Item2 == null)
-                    continue;
-                var ts = child.FirstModule<TweakScale>();
-
-                if (ts.ScaleType.Family != ScaleType.Family)
-                    continue;
-
-                var factor = GetScaleFactor(nodes.Item1, nodes.Item2, ts);
+                var ts = child.GetComponent<TweakScale>();
+                var factor = GetRelativeScaling(this, ts);
                 if (!factor.HasValue)
                     continue;
 
-                ts.tweakScale = tweakScale * factor.Value;
-                if (ts.ScaleFactors.Length > 0)
+                if (factor.Value*currentScale == ts.tweakScale)
                 {
-                    ts.tweakName = Tools.ClosestIndex(ts.tweakScale, ts.ScaleFactors);
+                    AutoScale(this, ts);
                 }
-                ts.OnTweakScaleChanged();
             }
         }
 
+        /// <summary>
+        /// Scale has changed!
+        /// </summary>
         private void OnTweakScaleChanged()
         {
             if (!isFreeScale)
@@ -509,17 +545,10 @@ namespace TweakScale
             currentScale = tweakScale;
         }
 
-        private void AutoScale()
-        {
-            var ts = GetTweakScale(part.parent);
-            if ((object)ts == null)
-                return;
-            if (ts.ScaleType != ScaleType)
-                return;
-            tweakName = ts.tweakName;
-            tweakScale = ts.tweakScale;
-        }
-
+        /// <summary>
+        /// Checks if there is more than one TweakScale instance on this part.
+        /// </summary>
+        /// <returns>True if duplicates exist, false otherwise.</returns>
         private bool CheckForDuplicateTweakScale()
         {
             if (_duplicate == Tristate.False)
@@ -527,7 +556,7 @@ namespace TweakScale
             if (_duplicate == Tristate.True)
                 return true;
 
-            if (this != part.FirstModule<TweakScale>())
+            if (this != part.GetComponent<TweakScale>())
             {
                 Tools.LogWf("Duplicate TweakScale module on part [{0}] {1}", part.partInfo.name, part.partInfo.title);
                 Fields["tweakScale"].guiActiveEditor = false;
@@ -539,6 +568,10 @@ namespace TweakScale
             return false;
         }
 
+        /// <summary>
+        /// Checks if the config for this TweakScale instance is valid. If not, logs it and returns false.
+        /// </summary>
+        /// <returns>True if the config is invalid, false otherwise.</returns>
         private bool CheckForInvalidCfg()
         {
             if (ScaleFactors.Length != 0) 
@@ -551,6 +584,7 @@ namespace TweakScale
             return true;
         }
 
+        [UsedImplicitly]
         void Update()
         {
             if (CheckForDuplicateTweakScale() || CheckForInvalidCfg())
@@ -562,14 +596,13 @@ namespace TweakScale
             {
                 if (_autoscaleEnabled)
                 {
-                    AutoScale();
+                    AutoScale(part.parent.GetComponent<TweakScale>(), this);
                 }
                 _firstUpdateWithParent = false;
             }
 
             if (HighLogic.LoadedSceneIsEditor && currentScale >= 0f)
             {
-// ReSharper disable once CompareOfFloatsByEqualityOperator
                 var changed = currentScale != (isFreeScale ? tweakScale : ScaleFactors[tweakName]);
 
                 if (changed) // user has changed the scale tweakable

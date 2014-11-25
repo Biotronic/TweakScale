@@ -114,7 +114,7 @@ namespace TweakScale
                 return;
             }
 
-            var newValue = Value;
+            var newValue = source.Value;
             if (MemberType == typeof(float))
             {
                 RescaleFloatRange((float)scale);

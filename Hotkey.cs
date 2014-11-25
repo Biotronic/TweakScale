@@ -8,7 +8,7 @@ namespace TweakScale
 {
     public class Hotkey
     {
-        private List<KeyCode> _modifiers = new List<KeyCode>();
+        private readonly Dictionary<KeyCode, bool> _modifiers = new Dictionary<KeyCode, bool>();
         private KeyCode _trigger = KeyCode.None;
         private readonly string _name;
         private readonly PluginConfiguration _config = PluginConfiguration.CreateForType<TweakScale>();
@@ -23,7 +23,7 @@ namespace TweakScale
             else
             {
                 _trigger = defaultKey.Last();
-                _modifiers = defaultKey.SkipLast().ToList();
+                SetModifiers(defaultKey.SkipLast().ToList());
             }
             Load();
         }
@@ -53,16 +53,32 @@ namespace TweakScale
             var names = s.Split('+');
             var keys = names.Select(Enums.Parse<KeyCode>).ToList();
             _trigger = keys.Last();
-            _modifiers = keys.SkipLast().ToList();
 
-            var tmp = _modifiers.Aggregate(Tuple.Create(0, 0),
-                (a, b) => Tuple.Create(a.Item1 + (Input.GetKey(b) ? 1 : 0), a.Item2 + (Input.GetKeyDown(b) ? 1 : 0)));
-            var triggered = tmp.Item1 == _modifiers.Count && tmp.Item2 > 0;
+            SetModifiers(keys.SkipLast().ToList());
+        }
+
+        private void SetModifiers(ICollection<KeyCode> mods)
+        {
+            _modifiers[KeyCode.RightShift] = mods.Contains(KeyCode.RightShift);
+            _modifiers[KeyCode.LeftShift] = mods.Contains(KeyCode.LeftShift);
+            _modifiers[KeyCode.RightControl] = mods.Contains(KeyCode.RightControl);
+            _modifiers[KeyCode.LeftControl] = mods.Contains(KeyCode.LeftControl);
+            _modifiers[KeyCode.RightAlt] = mods.Contains(KeyCode.RightAlt);
+            _modifiers[KeyCode.LeftAlt] = mods.Contains(KeyCode.LeftAlt);
+            _modifiers[KeyCode.RightApple] = mods.Contains(KeyCode.RightApple);
+            _modifiers[KeyCode.RightCommand] = mods.Contains(KeyCode.RightCommand);
+            _modifiers[KeyCode.LeftApple] = mods.Contains(KeyCode.LeftApple);
+            _modifiers[KeyCode.LeftCommand] = mods.Contains(KeyCode.LeftCommand);
+            _modifiers[KeyCode.LeftWindows] = mods.Contains(KeyCode.LeftWindows);
+            _modifiers[KeyCode.RightWindows] = mods.Contains(KeyCode.RightWindows);
         }
 
         public bool IsTriggered
         {
-            get { return _modifiers.All(Input.GetKey) && Input.GetKeyDown(_trigger); }
+            get
+            {
+                return _modifiers.All(a => Input.GetKey(a.Key) == a.Value) && Input.GetKeyDown(_trigger);
+            }
         }
     }
 }
