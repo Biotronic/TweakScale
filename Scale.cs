@@ -108,7 +108,7 @@ namespace TweakScale
         /// <summary>
         /// Updaters for different PartModules.
         /// </summary>
-        private IRescalable[] _updaters;
+        private IRescalable[] _updaters = new IRescalable[0];
 
         private enum Tristate
         {
@@ -447,6 +447,8 @@ namespace TweakScale
             if (nodeA == null || nodeB == null)
                 return null;
             
+            Tools.Logf("Nodes between {0} and {1}: {2} and {3}", a.partInfo.title, b.partInfo.title, nodeA.id, nodeB.id);
+
             return Tuple.Create(nodeA, nodeB);
         }
 
@@ -476,7 +478,8 @@ namespace TweakScale
             if (scaleA.Family != scaleB.Family)
                 return null;
 
-            return (scaleA.Scale * scaleB.Scale) / (baseA * baseB);
+
+            return (scaleA.Scale*baseB)/(scaleB.Scale*baseA);
         }
 
         /// <summary>
@@ -607,6 +610,8 @@ namespace TweakScale
 
                 if (changed) // user has changed the scale tweakable
                 {
+                    // If the user has changed the scale of the part before attaching it, we want to keep that scale.
+                    _firstUpdateWithParent = false;
                     OnTweakScaleChanged();
                 }
                 else if (part.transform.GetChild(0).localScale != _savedScale) // editor frequently nukes our OnStart resize some time later
@@ -620,7 +625,6 @@ namespace TweakScale
                 upd.OnUpdate();
             }
         }
-
         public float GetModuleCost()
         {
             if (!_setupRun)

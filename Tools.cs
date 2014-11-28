@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TweakScale.Annotations;
 using UnityEngine;
 
 namespace TweakScale
@@ -74,6 +75,7 @@ namespace TweakScale
         /// </summary>
         /// <param name="format">The format string.</param>
         /// <param name="args">The arguments to the format.</param>
+        [StringFormatMethod("format")]
         public static void Logf(string format, params object[] args)
         {
             Debug.Log("[TweakScale] " + string.Format(format, args.Select(a => a.PreFormat()).ToArray()));
@@ -84,6 +86,7 @@ namespace TweakScale
         /// </summary>
         /// <param name="format">The format string.</param>
         /// <param name="args">The arguments to the format.</param>
+        [StringFormatMethod("format")]
         public static void LogWf(string format, params object[] args)
         {
             Debug.LogWarning("[TweakScale Warning] " + string.Format(format, args.Select(a => a.PreFormat()).ToArray()));
