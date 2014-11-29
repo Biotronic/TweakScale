@@ -70,9 +70,9 @@ namespace TweakScale
                 foreach (var scale in _scales)
                 {
                     var title = PartLoader.getPartInfoByName(scale.Key).title;
-                    var cfg = ScaleConfig.AllConfigs.First(a => a.name == scale.Value.type);
+                    var cfg = ScaleType.AllScaleTypes.First(a => a.Name == scale.Value.type);
 
-                    if (cfg.defaultScale == scale.Value.defaultScale)
+                    if (cfg.DefaultScale == scale.Value.defaultScale)
                     {
                         sw.WriteLine(string.Format(partFormat2, scale.Key, title, scale.Value.type));
                     }

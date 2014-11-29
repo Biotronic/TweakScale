@@ -118,14 +118,14 @@ namespace TweakScale
             }
         }
 
-        private static ScaleType[] _scaleTypes;
-        public static ScaleType[] AllScaleTypes
+        private static List<ScaleType> _scaleTypes;
+        public static List<ScaleType> AllScaleTypes
         {
             get {
                 return _scaleTypes = _scaleTypes ??
                         (GameDatabase.Instance.GetConfigs("SCALETYPE")
                             .Select(a => new ScaleType(a.config))
-                            .ToArray());
+                            .ToList<ScaleType>());
             }
         }
 
