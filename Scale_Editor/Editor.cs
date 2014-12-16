@@ -1,4 +1,6 @@
-﻿using System;
+﻿using KSPAPIExtensions;
+using System;
+using System.Linq;
 
 namespace TweakScale
 {
@@ -28,7 +30,7 @@ namespace TweakScale
         [UI_ChooseOption(scene = UI_Scene.Editor)]
         public int _tweakName = 0;
 
-        ScaleConfig _cfg;
+        ScaleType _cfg;
         BaseField _scale;
         BaseField _name;
         BaseField _type;
@@ -46,7 +48,7 @@ namespace TweakScale
             _nameEdit = (UI_ChooseOption)_name.uiControlEditor;
             _typeEdit = (UI_ChooseOption)_type.uiControlEditor;
 
-            _typeEdit.options = ScaleConfig.AllConfigs.Select(a => a.name).ToArray();
+            _typeEdit.options = ScaleType.AllScaleTypes.Select(a => a.Name).ToArray();
 
             scaleInfo = ScaleDatabase.Lookup(part.partInfo.name);
         }
@@ -62,10 +64,10 @@ namespace TweakScale
                 _scaleTypeId = Array.IndexOf(_typeEdit.options, value.type);
                 ChangeScaleType();
                 _tweakScale = value.defaultScale;
-                if (!_cfg.isFreeScale)
+                if (!_cfg.IsFreeScale)
                 {
-                    _tweakName = Tools.ClosestIndex(_tweakScale, _cfg.scaleFactors);
-                    _tweakScale = _cfg.scaleFactors[_tweakName];
+                    _tweakName = Tools.ClosestIndex(_tweakScale, _cfg.AllScaleFactors);
+                    _tweakScale = _cfg.AllScaleFactors[_tweakName];
                 }
             }
         }
@@ -82,8 +84,8 @@ namespace TweakScale
             _hide = _oldHide = ScaleDatabase.IsHidden(part.partInfo.name);
 
             _type.guiActiveEditor = _scaled;
-            _scale.guiActiveEditor = _scaled && _cfg.isFreeScale;
-            _name.guiActiveEditor = _scaled && !_cfg.isFreeScale;
+            _scale.guiActiveEditor = _scaled && _cfg.IsFreeScale;
+            _name.guiActiveEditor = _scaled && !_cfg.IsFreeScale;
 
 
             if (_oldScaleTypeId != _scaleTypeId)
@@ -91,9 +93,9 @@ namespace TweakScale
                 ChangeScaleType();
             }
 
-            if (!_cfg.isFreeScale)
+            if (!_cfg.IsFreeScale)
             {
-                _tweakScale = _cfg.scaleFactors[_tweakName];
+                _tweakScale = _cfg.AllScaleFactors[_tweakName];
             }
 
             if (_scaled)
@@ -117,21 +119,21 @@ namespace TweakScale
         private void ChangeScaleType()
         {
             _oldScaleTypeId = _scaleTypeId;
-            _cfg = ScaleConfig.AllConfigs[_scaleTypeId];
-            if (_cfg.isFreeScale)
+            _cfg = ScaleType.AllScaleTypes[_scaleTypeId];
+            if (_cfg.IsFreeScale)
             {
-                _scaleEdit.minValue = _cfg.minValue;
-                _scaleEdit.maxValue = _cfg.maxValue;
+                _scaleEdit.minValue = _cfg.MinValue;
+                _scaleEdit.maxValue = _cfg.MaxValue;
                 _scaleEdit.incrementLarge = (float)Math.Round((_scaleEdit.maxValue - _scaleEdit.minValue) / 10, 2);
                 _scaleEdit.incrementSmall = (float)Math.Round(_scaleEdit.incrementLarge / 10, 2);
-                _tweakScale = _cfg.defaultScale;
-                _scale.guiUnits = _cfg.suffix;
+                _tweakScale = _cfg.DefaultScale;
+                _scale.guiUnits = _cfg.Suffix;
             }
             else
             {
-                _nameEdit.options = _cfg.scaleNames;
-                _tweakName = Tools.ClosestIndex(_cfg.defaultScale, _cfg.scaleFactors);
-                _tweakScale = _cfg.scaleFactors[_tweakName];
+                _nameEdit.options = _cfg.ScaleNames;
+                _tweakName = Tools.ClosestIndex(_cfg.DefaultScale, _cfg.AllScaleFactors);
+                _tweakScale = _cfg.AllScaleFactors[_tweakName];
             }
         }
     }
