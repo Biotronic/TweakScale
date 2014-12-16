@@ -625,7 +625,7 @@ namespace TweakScale
                 upd.OnUpdate();
             }
         }
-        public float GetModuleCost()
+        public float GetModuleCost(float defaultCost)
         {
             if (!_setupRun)
             {
