@@ -1,5 +1,4 @@
-﻿using System.Runtime.Hosting;
-using KSP.IO;
+﻿using KSP.IO;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -11,10 +10,11 @@ namespace TweakScale
         private readonly Dictionary<KeyCode, bool> _modifiers = new Dictionary<KeyCode, bool>();
         private KeyCode _trigger = KeyCode.None;
         private readonly string _name;
-        private readonly PluginConfiguration _config = PluginConfiguration.CreateForType<TweakScale>();
+        private readonly PluginConfiguration _config;
 
         public Hotkey(string name, ICollection<KeyCode> defaultKey)
         {
+            _config = HotkeyManager.Instance.Config;
             _name = name;
             if (defaultKey.Count == 0)
             {
@@ -30,6 +30,7 @@ namespace TweakScale
 
         public Hotkey(string name, string defaultKey)
         {
+            _config = HotkeyManager.Instance.Config;
             _name = name;
             ParseString(defaultKey);
             Load();
@@ -43,18 +44,28 @@ namespace TweakScale
             {
                 ParseString(rawNames);
             }
+            Save();
         }
 
         private void ParseString(string s)
         {
-            _config.SetValue(_name, s);
-            _config.save();
 
             var names = s.Split('+');
             var keys = names.Select(Enums.Parse<KeyCode>).ToList();
             _trigger = keys.Last();
 
             SetModifiers(keys.SkipLast().ToList());
+        }
+
+        private void Save()
+        {
+            var result = "";
+            foreach (var kv in _modifiers)
+                if (kv.Value)
+                    result += kv.Key + "+";
+
+            _config.SetValue(_name, result + _trigger);
+            _config.save();
         }
 
         private void SetModifiers(ICollection<KeyCode> mods)

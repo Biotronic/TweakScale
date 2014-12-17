@@ -35,6 +35,7 @@
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Hotkey.cs" />
     <Compile Include="Hotkeyable.cs" />
+    <Compile Include="HotkeyManager.cs" />
     <Compile Include="MemberUpdater.cs" />
     <Compile Include="OSD.cs" />
     <Compile Include="Properties\Annotations.cs" />

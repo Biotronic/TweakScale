@@ -1,40 +1,9 @@
 ﻿using System.Collections.Generic;
-using System.Security.Policy;
-using TweakScale.Annotations;
 using UnityEngine;
 using KSP.IO;
 
 namespace TweakScale
 {
-    [KSPAddon(KSPAddon.Startup.EditorAny, false)]
-    internal class HotkeyManager : SingletonBehavior<HotkeyManager>
-    {
-        private readonly OSD _osd = new OSD();
-        private readonly Dictionary<string, Hotkeyable> _hotkeys = new Dictionary<string, Hotkeyable>();
-
-        [UsedImplicitly]
-        private void OnGUI()
-        {
-            _osd.Update();
-        }
-
-        [UsedImplicitly]
-        private void Update()
-        {
-            foreach (var key in _hotkeys.Values)
-            {
-                key.Update();
-            }
-        }
-
-        public Hotkeyable AddHotkey(string name, ICollection<KeyCode> tempDisableDefault, ICollection<KeyCode> toggleDefault, bool state)
-        {
-            if (_hotkeys.ContainsKey(name))
-                return _hotkeys[name];
-            return _hotkeys[name] = new Hotkeyable(_osd, name, tempDisableDefault, toggleDefault, state);
-        }
-    }
-
     class Hotkeyable
     {
         private readonly OSD _osd;
@@ -42,7 +11,7 @@ namespace TweakScale
         private readonly Hotkey _tempDisable;
         private readonly Hotkey _toggle;
         private bool _state;
-        private readonly PluginConfiguration _config = PluginConfiguration.CreateForType<TweakScale>();
+        private readonly PluginConfiguration _config;
 
         public bool State {
             get { return _state && !_tempDisable.IsTriggered; }
@@ -50,27 +19,31 @@ namespace TweakScale
 
         public Hotkeyable(OSD osd, string name, ICollection<KeyCode> tempDisableDefault, ICollection<KeyCode> toggleDefault, bool state)
         {
+            _config = HotkeyManager.Instance.Config;
             _osd = osd;
             _name = name;
-            _tempDisable = new Hotkey("Disable" + name, tempDisableDefault);
-            _toggle = new Hotkey("Toggle" + name, toggleDefault);
+            _tempDisable = new Hotkey("Disable " + name, tempDisableDefault);
+            _toggle = new Hotkey("Toggle " + name, toggleDefault);
             _state = state;
             Load();
         }
 
         public Hotkeyable(OSD osd, string name, string tempDisableDefault, string toggleDefault, bool state)
         {
+            _config = HotkeyManager.Instance.Config;
             _osd = osd;
             _name = name;
-            _tempDisable = new Hotkey("Disable" + name, tempDisableDefault);
-            _toggle = new Hotkey("Toggle" + name, toggleDefault);
+            _tempDisable = new Hotkey("Disable " + name, tempDisableDefault);
+            _toggle = new Hotkey("Toggle " + name, toggleDefault);
             _state = state;
             Load();
         }
 
         private void Load()
         {
+            Debug.Log("Getting value. Currently: " + _state);
             _state = _config.GetValue(_name, _state);
+            Debug.Log("New value: " + _state);
 
             _config.SetValue(_name, _state);
             _config.save();
