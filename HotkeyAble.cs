@@ -78,9 +78,12 @@ namespace TweakScale
 
         public void Update()
         {
-            if (!_toggle.IsTriggered) return;
+            if (!_toggle.IsTriggered)
+                return;
             _state = !_state;
-            _osd.Info(_name + (_state? " enabled." : " disabled."));
+            _osd.Info(_name + (_state ? " enabled." : " disabled."));
+            _config.SetValue(_name, _state);
+            _config.save();
         }
 
         public static bool operator true(Hotkeyable a)
