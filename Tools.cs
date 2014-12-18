@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 using TweakScale.Annotations;
 using UnityEngine;
 
@@ -212,6 +214,37 @@ namespace TweakScale
         public static bool HasParent(this Part p)
         {
             return (object) p.parent != null;
+        }
+
+        public static string ToString_rec(this object obj, int depth = 0)
+        {
+            if (obj == null)
+                return "(null)";
+
+            var result = new StringBuilder("(");
+            var tt = obj.GetType();
+
+            Func<object, string> fmt = a => a == null ? "(null)" :  depth == 0 ? a.ToString() : a.ToString_rec();
+
+            foreach (var field in tt.GetFields(BindingFlags.Public | BindingFlags.Instance))
+            {
+                result.AppendFormat("{0}: {1}, ", field.Name, fmt(field.GetValue(obj)));
+            }
+
+            foreach (var field in tt.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                try
+                {
+                    result.AppendFormat("{0}: {1}, ", field.Name, fmt(field.GetValue(obj, null)));
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            result.Append(")");
+
+            return result.ToString();
         }
     }
 }

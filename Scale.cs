@@ -314,13 +314,21 @@ namespace TweakScale
         private void MoveNode(AttachNode node, AttachNode baseNode, bool movePart)
         {
             var oldPosition = node.position;
-            node.position = baseNode.position * ScalingFactor.absolute.linear;
+            node.position = node.position * ScalingFactor.relative.linear;
+            var deltaPos = node.position - oldPosition;
+
             if (movePart && node.attachedPart != null)
             {
                 if (node.attachedPart == part.parent)
-                    part.transform.Translate(oldPosition - node.position);
+                {
+                    part.transform.Translate(-deltaPos, part.transform);
+                }
                 else
-                    node.attachedPart.transform.Translate(node.position - oldPosition, part.transform);
+                {
+                    var offset = node.attachedPart.attPos*(ScalingFactor.relative.linear - 1);
+                    node.attachedPart.transform.Translate(deltaPos + offset, part.transform);
+                    node.attachedPart.attPos *= ScalingFactor.relative.linear;
+                }
             }
             RescaleNode(node, baseNode);
         }
@@ -444,8 +452,6 @@ namespace TweakScale
 
             if (nodeA == null || nodeB == null)
                 return null;
-            
-            Tools.Logf("Nodes between {0} and {1}: {2} and {3}", a.partInfo.title, b.partInfo.title, nodeA.id, nodeB.id);
 
             return Tuple.Create(nodeA, nodeB);
         }
