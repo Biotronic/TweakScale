@@ -283,14 +283,19 @@ namespace TweakScale
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
-            if ((object)part.parent != null)
+            if (part.parent != null)
             {
                 _firstUpdateWithParent = false;
             }
             Setup();
 
-            _autoscaleEnabled = HotkeyManager.Instance.AddHotkey("Autoscale", new[] { KeyCode.LeftShift }, new[] { KeyCode.LeftControl, KeyCode.L }, true);
-            _chainingEnabled = HotkeyManager.Instance.AddHotkey("Scale chaining", new[] { KeyCode.LeftShift }, new[] { KeyCode.LeftControl, KeyCode.K }, true);
+            if (HighLogic.LoadedSceneIsEditor)
+            {
+                _autoscaleEnabled = HotkeyManager.Instance.AddHotkey("Autoscale", new[] {KeyCode.LeftShift},
+                    new[] {KeyCode.LeftControl, KeyCode.L}, true);
+                _chainingEnabled = HotkeyManager.Instance.AddHotkey("Scale chaining", new[] {KeyCode.LeftShift},
+                    new[] {KeyCode.LeftControl, KeyCode.K}, true);
+            }
         }
 
         public override void OnLoad(ConfigNode node)
@@ -464,9 +469,14 @@ namespace TweakScale
         /// <returns>The difference in scale between <paramref name="a"/> and <paramref name="b"/>, or null if the parts are incompatible.</returns>
         private static float? GetRelativeScaling(TweakScale a, TweakScale b)
         {
+            if (a == null || b == null)
+                return null;
+
             var nodes = NodesBetween(a.part, b.part);
+
             if (!nodes.HasValue)
                 return null;
+
             var nodeA = nodes.Value.Item1;
             var nodeB = nodes.Value.Item2;
 
@@ -481,7 +491,6 @@ namespace TweakScale
 
             if (scaleA.Family != scaleB.Family)
                 return null;
-
 
             return (scaleA.Scale*baseB)/(scaleB.Scale*baseA);
         }
