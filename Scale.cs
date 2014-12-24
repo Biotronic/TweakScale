@@ -270,7 +270,7 @@ namespace TweakScale
 
             if (!doUpdate)
             {
-                UpdateByWidth(false);
+                UpdateByWidth(false, true);
                 foreach (var updater in _updaters)
                 {
                     updater.OnRescale(ScalingFactor);
@@ -316,10 +316,22 @@ namespace TweakScale
         /// <param name="node">The node to move.</param>
         /// <param name="baseNode">The same node, as found on the prefab part.</param>
         /// <param name="movePart">Whether or not to move attached parts.</param>
-        private void MoveNode(AttachNode node, AttachNode baseNode, bool movePart)
+        /// <param name="absolute">Whether to use absolute or relative scaling.</param>
+        private void MoveNode(AttachNode node, AttachNode baseNode, bool movePart, bool absolute)
         {
+            if (baseNode == null)
+            {
+                baseNode = node;
+                absolute = false;
+            }
+
             var oldPosition = node.position;
-            node.position = node.position * ScalingFactor.relative.linear;
+
+            if (absolute)
+                node.position = baseNode.position * ScalingFactor.absolute.linear;
+            else
+                node.position = node.position * ScalingFactor.relative.linear;
+
             var deltaPos = node.position - oldPosition;
 
             if (movePart && node.attachedPart != null)
@@ -370,7 +382,8 @@ namespace TweakScale
         /// Updates properties that change linearly with scale.
         /// </summary>
         /// <param name="moveParts">Whether or not to move attached parts.</param>
-        private void UpdateByWidth(bool moveParts)
+        /// <param name="absolute">Whether to use absolute or relative scaling.</param>
+        private void UpdateByWidth(bool moveParts, bool absolute)
         {
             if (defaultTransformScale.x == 0.0f)
             {
@@ -394,7 +407,7 @@ namespace TweakScale
                 {
                     var baseNode = baseNodesWithSameId[idIdx];
 
-                    MoveNode(node, baseNode, moveParts);
+                    MoveNode(node, baseNode, moveParts, absolute);
                 }
                 else
                 {
@@ -404,7 +417,7 @@ namespace TweakScale
 
             if (part.srfAttachNode != null)
             {
-                MoveNode(part.srfAttachNode, _prefabPart.srfAttachNode, moveParts);
+                MoveNode(part.srfAttachNode, _prefabPart.srfAttachNode, moveParts, absolute);
             }
             if (moveParts)
             {
@@ -551,7 +564,7 @@ namespace TweakScale
                 ChainScale();
             }
 
-            UpdateByWidth(true);
+            UpdateByWidth(true, false);
             UpdateWindow();
 
             foreach (var updater in _updaters)
@@ -629,7 +642,7 @@ namespace TweakScale
                 }
                 else if (part.transform.GetChild(0).localScale != _savedScale) // editor frequently nukes our OnStart resize some time later
                 {
-                    UpdateByWidth(false);
+                    UpdateByWidth(false, true);
                 }
             }
 
@@ -638,6 +651,7 @@ namespace TweakScale
                 upd.OnUpdate();
             }
         }
+
         public float GetModuleCost(float defaultCost)
         {
             if (!_setupRun)

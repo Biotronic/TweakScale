@@ -80,7 +80,7 @@ namespace TweakScale
         [StringFormatMethod("format")]
         public static void Logf(string format, params object[] args)
         {
-            Debug.Log("[TweakScale] " + string.Format(format, args.Select(a => a.PreFormat()).ToArray()));
+            Debug.Log("[TweakScale] " + string.Format(format, args.Select(a => a.PreFormat()).ToArray()) + Environment.NewLine + StackTraceUtility.ExtractStackTrace());
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace TweakScale
         [StringFormatMethod("format")]
         public static void LogWf(string format, params object[] args)
         {
-            Debug.LogWarning("[TweakScale Warning] " + string.Format(format, args.Select(a => a.PreFormat()).ToArray()));
+            Debug.LogWarning("[TweakScale Warning] " + string.Format(format, args.Select(a => a.PreFormat()).ToArray()) + Environment.NewLine + StackTraceUtility.ExtractStackTrace());
         }
 
         /// <summary>
