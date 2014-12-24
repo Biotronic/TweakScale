@@ -2,6 +2,7 @@
 using System.Reflection;
 using UnityEngine;
 
+
 namespace TweakScale
 {
     public class MemberUpdater
@@ -11,6 +12,19 @@ namespace TweakScale
         private readonly PropertyInfo _property;
         private readonly UI_FloatRange _floatRange;
         private const BindingFlags LookupFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        static void ConcatSafely(string name, Func<string> a, ref string result)
+        {
+            try
+            {
+                result += ' ' + name + " = ";
+                result += a() + ' ';
+            }
+            catch
+            {
+                result += "EXCEPTION";
+            }
+        }
 
         public static MemberUpdater Create(object obj, string name)
         {
@@ -24,21 +38,36 @@ namespace TweakScale
             UI_FloatRange floatRange = null;
             BaseFieldList fields;
             if (obj is PartModule)
-            {                
+            {
                 fields = (obj as PartModule).Fields;
-                if (fields == null)
-                {
-                    Debug.LogWarning("[TWEAKSCALE] MemberUpdater.Create(" + objectType.ToString() + ", " + name + "), PartModule.Fields call returns null!");
-                    return null;
-                }
-                var fieldData = fields[name];
-                if ((object)fieldData != null)
-                {
-                    var ctrl = fieldData.uiControlEditor;
-                    if (ctrl is UI_FloatRange)
+                try
+                {                    
+                    var fieldData = fields[name];
+                    if ((object)fieldData != null)
                     {
-                        floatRange = ctrl as UI_FloatRange;
+                        var ctrl = fieldData.uiControlEditor;
+                        if (ctrl is UI_FloatRange)
+                        {
+                            floatRange = ctrl as UI_FloatRange;
+                        }
                     }
+                }
+                catch (Exception)
+                {
+                    string debuglog = "===============================================\r\n";
+                    ConcatSafely("objectType", () => { return objectType.ToString(); }, ref debuglog);
+                    ConcatSafely("name", () => { return name; }, ref debuglog);
+                    ConcatSafely("fields.ReflectType", () => { return fields.ReflectedType.ToString().ToString(); }, ref debuglog);
+                    ConcatSafely("fields.Count", () => { return fields.Count.ToString(); }, ref debuglog);
+                    ConcatSafely("fields.Count", 
+                        () => 
+                        {
+                            string acc = "";
+                            foreach (var f in fields) 
+                                ConcatSafely("field", () => {return f.ToString_rec(1); }, ref acc);
+                            return acc;
+                        }, ref debuglog);
+                    Tools.LogWf(debuglog);
                 }
             }
 
