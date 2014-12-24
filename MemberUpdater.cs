@@ -14,7 +14,7 @@ namespace TweakScale
 
         public static MemberUpdater Create(object obj, string name)
         {
-            if (obj == null)
+            if (obj == null || name == null)
             {
                 return null;
             }
@@ -22,9 +22,16 @@ namespace TweakScale
             var field = objectType.GetField(name, LookupFlags);
             var property = objectType.GetProperty(name, LookupFlags);
             UI_FloatRange floatRange = null;
+            BaseFieldList fields;
             if (obj is PartModule)
-            {
-                var fieldData = (obj as PartModule).Fields[name];
+            {                
+                fields = (obj as PartModule).Fields;
+                if (fields == null)
+                {
+                    Debug.LogWarning("[TWEAKSCALE] MemberUpdater.Create(" + objectType.ToString() + ", " + name + "), PartModule.Fields call returns null!");
+                    return null;
+                }
+                var fieldData = fields[name];
                 if ((object)fieldData != null)
                 {
                     var ctrl = fieldData.uiControlEditor;
